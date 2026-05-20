@@ -1,0 +1,734 @@
+/* ==========================================================================
+   RESET, CONFIGURAÇÕES GERAIS E TIPOGRAFIA (ADMIN)
+   ========================================================================== */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background: #f8f9fa; /* Fundo cinza claro para destacar os painéis */
+    color: #222222;
+    line-height: 1.5;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* ==========================================================================
+   BARRA DE NAVEGAÇÃO SUPERIOR DO ADMIN
+   ========================================================================== */
+nav {
+    background: #000000;
+    padding: 15px 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.nav-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.logo-container {
+    max-width: 160px;
+    display: flex;
+    align-items: center;
+}
+
+.logo-container img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.admin-title {
+    color: #c5a059;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-size: 13px;
+}
+
+/* ==========================================================================
+   CONTAINER PRINCIPAL DO PAINEL
+   ========================================================================== */
+.admin-container {
+    padding: 40px 20px;
+}
+
+h2, h3 {
+    font-weight: 300;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 20px;
+    color: #111111;
+}
+
+h3 {
+    font-size: 18px;
+    border-bottom: 2px solid #eaeaea;
+    padding-bottom: 8px;
+}
+
+.mt-40 {
+    margin-top: 40px;
+}
+
+/* ==========================================================================
+   ESTILOS DE BOTÕES DO PAINEL
+   ========================================================================== */
+.btn {
+    display: inline-block;
+    background: #000000;
+    color: #ffffff;
+    text-decoration: none;
+    text-align: center;
+    padding: 12px 20px;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border: 1px solid #000000;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    background: #c5a059;
+    border-color: #c5a059;
+}
+
+.btn-admin {
+    width: 100%;
+    margin-top: 10px;
+}
+
+.btn-logout {
+    background: #c53030 !important;
+    border-color: #c53030 !important;
+    color: white !important;
+    padding: 8px 15px !important;
+    font-size: 11px !important;
+}
+
+.btn-logout:hover {
+    background: #9b2c2c !important;
+    border-color: #9b2c2c !important;
+}
+
+/* ==========================================================================
+   ESTRUTURA DE CORREÇÃO DO FORMULÁRIO E INPUTS (SOLUÇÃO DE TEXTO INVISÍVEL)
+   ========================================================================== */
+.form-group {
+    background: #ffffff;
+    border: 1px solid #eaeaea;
+    border-radius: 8px;
+    padding: 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+}
+
+.form-group label {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: bold;
+    margin-bottom: 6px;
+    color: #555555;
+    letter-spacing: 0.5px;
+}
+
+/* Inputs, Selects globais do Admin com alta visibilidade */
+.form-group input[type="text"],
+.form-group input[type="password"],
+.form-group input[type="number"],
+.form-group input[type="email"],
+.form-group input[type="tel"],
+.form-group input[type="date"],
+.form-group select {
+    width: 100% !important;
+    background: #ffffff !important;
+    color: #111111 !important; /* Cor escura forte para visibilidade total do que é digitado */
+    border: 1px solid #cccccc !important;
+    padding: 12px 15px !important;
+    border-radius: 4px !important;
+    font-size: 14px !important;
+    margin-bottom: 15px !important;
+    box-sizing: border-box !important;
+    outline: none !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-group input[type="text"]::placeholder,
+.form-group input[type="password"]::placeholder,
+.form-group input[type="number"]::placeholder,
+.form-group input[type="email"]::placeholder,
+.form-group input[type="tel"]::placeholder {
+    color: #999999 !important;
+    opacity: 1;
+}
+
+.form-group input[type="text"]:focus,
+.form-group input[type="password"]:focus,
+.form-group input[type="number"]:focus,
+.form-group input[type="email"]:focus,
+.form-group input[type="tel"]:focus,
+.form-group input[type="date"]:focus,
+.form-group select:focus {
+    border-color: #c5a059 !important;
+    box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.15) !important;
+}
+
+/* Checkbox Personalizado */
+.checkbox-container {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 13px !important;
+    text-transform: none !important;
+    color: #333333 !important;
+    margin-bottom: 15px !important;
+}
+
+.checkbox-container input[type="checkbox"] {
+    width: auto !important;
+    margin-bottom: 0 !important;
+    cursor: pointer;
+    transform: scale(1.1);
+}
+
+.checkbox-container input[type="checkbox"]:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+
+/* ==========================================================================
+   ESTRUTURA DE LOGIN (TELA INICIAL DO ADMIN)
+   ========================================================================== */
+.text-center {
+    text-align: center;
+}
+
+#login-admin {
+    max-width: 400px;
+    margin: 100px auto 0 auto;
+}
+
+#login-admin h2 {
+    margin-bottom: 8px;
+}
+
+#login-admin p {
+    color: #666666;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+/* Header interno pós-login */
+.admin-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.admin-header-flex h2 {
+    margin-bottom: 0;
+}
+
+/* ==========================================================================
+   GRID DE COLUNAS DO ADMIN (CADASTRAR VS GERENCIAR MARCAS)
+   ========================================================================== */
+.admin-columns-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+}
+
+/* Alinhamento para o mini formulário de Adicionar Marca */
+.admin-columns-grid .form-group[style*="display: flex"] {
+    display: flex !important;
+    gap: 10px !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    padding: 15px !important;
+}
+
+/* Garante que o input de texto do formulário flex-row se expanda perfeitamente */
+.admin-columns-grid .form-group[style*="display: flex"] input {
+    flex-grow: 1 !important;
+    margin-bottom: 0 !important;
+}
+
+/* Força o botão de adicionar marca a manter o design alinhado */
+.admin-columns-grid .form-group[style*="display: flex"] .btn {
+    height: 45px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+}
+
+/* ==========================================================================
+   LISTAS E GERENCIAMENTO (PRODUTOS E MARCAS CADASTRADAS)
+   ========================================================================== */
+.lista-gerenciamento {
+    background: #ffffff;
+    border: 1px solid #eaeaea;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.01);
+}
+
+.admin-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 10px;
+    border-bottom: 1px solid #f3f3f3;
+}
+
+.admin-item:last-child {
+    border-bottom: none;
+}
+
+.admin-item span {
+    font-size: 14px;
+    color: #333333;
+}
+
+.admin-item small {
+    display: block;
+    margin-top: 4px;
+    color: #777777;
+    font-size: 12px;
+}
+
+.admin-actions-flex {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.admin-export-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, max-content));
+    justify-content: flex-end;
+    align-items: stretch;
+    gap: 10px;
+    margin: -4px 0 16px;
+}
+
+.admin-export-actions .btn {
+    width: 100%;
+    min-width: 150px;
+    white-space: normal;
+    line-height: 1.25;
+}
+
+/* Botões de Ação na Listagem */
+.btn-editar, .btn-deletar {
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+    transition: background 0.2s ease;
+}
+
+.btn-editar {
+    background: #4a5568;
+    color: white;
+}
+
+.btn-editar:hover {
+    background: #2d3748;
+}
+
+.btn-deletar {
+    background: #e53e3e;
+    color: white;
+}
+
+.btn-deletar:hover {
+    background: #c53030;
+}
+
+/* Estilização para as tags de marcas rápidas */
+#lista-marcas-admin button {
+    background: #f1f1f1;
+    border: 1px solid #ddd;
+    color: #444;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#lista-marcas-admin button:hover {
+    background: #e53e3e;
+    color: white;
+    border-color: #e53e3e;
+}
+
+/* ==========================================================================
+   REGRAS DE RESPONSIVIDADE DO ADMIN
+   ========================================================================== */
+
+/* Telas médias (Tablets e Notebooks menores) */
+@media (max-width: 992px) {
+    .admin-columns-grid {
+        grid-template-columns: 1fr !important;
+        gap: 20px;
+    }
+}
+
+/* Telas pequenas (Celulares) */
+@media (max-width: 768px) {
+    .nav-flex {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .admin-container {
+        padding: 20px 10px;
+    }
+
+    .admin-header-flex {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+        text-align: center;
+    }
+
+    .admin-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .admin-actions-flex {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .admin-export-actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        justify-content: stretch;
+    }
+
+    .admin-export-actions .btn {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .admin-columns-grid .form-group[style*="display: flex"] {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+
+    .admin-columns-grid .form-group[style*="display: flex"] .btn {
+        width: 100%;
+    }
+}
+
+
+/* ==========================================================================
+   MELHORIAS DE EFICIÊNCIA DO ADMIN: AGRUPAMENTO, VOLUMES E IMAGENS
+   ========================================================================== */
+.admin-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.admin-summary-grid div {
+    background: #111111;
+    color: #ffffff;
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+
+.admin-summary-grid strong {
+    display: block;
+    color: #c5a059;
+    font-size: 24px;
+    line-height: 1;
+    margin-bottom: 6px;
+}
+
+.admin-summary-grid span {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #e9e2d6;
+}
+
+.admin-help-text {
+    display: block;
+    margin: -8px 0 14px;
+    color: #777;
+    font-size: 12px;
+}
+
+.volume-quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: -6px 0 16px;
+}
+
+.volume-quick-actions button {
+    border: 1px solid #d7c7aa;
+    background: #fffaf2;
+    color: #6f5527;
+    border-radius: 999px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.admin-image-preview {
+    min-height: 150px;
+    margin: -4px 0 16px;
+    border: 1px dashed #d8c9af;
+    border-radius: 8px;
+    background: #fffaf4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #8a7c68;
+    font-size: 12px;
+    overflow: hidden;
+}
+
+.admin-image-preview img {
+    max-width: 100%;
+    max-height: 150px;
+    object-fit: contain;
+    padding: 10px;
+}
+
+.admin-toolbar {
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) 240px;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.admin-toolbar input,
+.admin-toolbar select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #cccccc;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #111111;
+    font-size: 14px;
+}
+
+.admin-brand-section {
+    border: 1px solid #eee2ce;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 18px;
+    background: #fff;
+}
+
+.admin-brand-section h4 {
+    margin: 0;
+    padding: 12px 14px;
+    background: #fff8ed;
+    color: #6f5527;
+    border-bottom: 1px solid #eee2ce;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 13px;
+}
+
+.admin-product-row {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: center;
+    padding: 14px;
+    border-bottom: 1px solid #f3f3f3;
+}
+
+.admin-product-row:last-child {
+    border-bottom: none;
+}
+
+.admin-thumb {
+    width: 72px;
+    height: 72px;
+    border-radius: 8px;
+    background: #fafafa;
+    border: 1px solid #ededed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #999;
+    font-size: 10px;
+    text-align: center;
+    overflow: hidden;
+}
+
+.admin-thumb img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    padding: 6px;
+}
+
+.admin-product-info strong,
+.admin-product-info small {
+    display: block;
+}
+
+.admin-product-info strong {
+    color: #222;
+    font-size: 15px;
+    margin-bottom: 4px;
+}
+
+.admin-product-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 2px 0 5px;
+}
+
+.admin-product-badges span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 22px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: #111;
+    color: #f7d887;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.7px;
+    text-transform: uppercase;
+}
+
+.admin-product-badges span + span {
+    background: #fff6e5;
+    color: #9b6714;
+    border: 1px solid rgba(197,160,89,0.34);
+}
+
+.admin-product-info small {
+    color: #777;
+    font-size: 12px;
+    margin-top: 2px;
+}
+
+.btn-duplicar {
+    background: #805ad5;
+}
+
+.btn-duplicar:hover {
+    background: #6b46c1;
+}
+
+.admin-brand-pill {
+    background: #f5f0e8;
+    border: 1px solid #eadcc6;
+    color: #4a4032;
+    padding: 8px 9px;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: bold;
+    margin-bottom: 6px;
+}
+
+.admin-brand-pill span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.admin-brand-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.admin-brand-pill button {
+    border: none !important;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.admin-brand-edit {
+    background: #fff !important;
+    border: 1px solid rgba(197,160,89,0.42) !important;
+    color: #6f5528 !important;
+    border-radius: 4px;
+    font-size: 11px;
+    padding: 5px 8px !important;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.admin-brand-delete {
+    background: none !important;
+    color: #c53030 !important;
+    padding: 0 4px !important;
+    font-size: 18px;
+    line-height: 1;
+}
+
+@media (max-width: 768px) {
+    .admin-columns-grid .form-group[style*="display: flex"] {
+        flex-direction: column;
+        align-items: stretch !important;
+    }
+
+    .admin-columns-grid .form-group[style*="display: flex"] .btn {
+        width: 100%;
+    }
+
+    .admin-summary-grid,
+    .admin-toolbar,
+    .admin-product-row {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-thumb {
+        width: 100%;
+        height: 120px;
+    }
+
+    .admin-product-row .admin-actions-flex {
+        justify-content: stretch;
+        flex-direction: column;
+    }
+
+    .admin-export-actions {
+        grid-template-columns: 1fr;
+    }
+}

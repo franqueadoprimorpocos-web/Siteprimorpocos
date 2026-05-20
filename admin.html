@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Primor</title>
+    <link rel="stylesheet" href="assets/css/admin.css">
+    <link rel="shortcut icon"
+        href="https://lh3.googleusercontent.com/pw/AP1GczPfQM2bnksOdkucHZRJZo-kSqLrjW7zBi5pZECv-MmYOZSbH7myhH6qfBXTgYL_wODGz4Z-rF8r72sMgAQtJM7ZPJcc-t831YtTqqQsT-XtmxTE0q-8WmN3cg-AhSnrx5a2hC-_-H9mvfKwePlvxXQ=w98-h98-s-no-gm?authuser=0favicon.ico"
+        type="image/x-icon">
+</head>
+
+<body>
+
+    <nav>
+        <div class="container nav-flex">
+            <div class="logo-container">
+                <img src="https://lh3.googleusercontent.com/pw/AP1GczMnhMJa9UbsvTsSi8kkrc19p7ZAOs-8B6peQLIbZR_cppPQcaVEzqT5pEFGEIshqxVoMPjspUF1IkoQsg7TGJe-0pKKuIIPG-NPFf4dUDdDfPz_NdE-Qnap-nT5q-vq_DguuFO6tlRndxNtdUwZIGE=w866-h288-s-no-gm?authuser=0"
+                    alt="Logo Primor">
+             </div>
+            <div class="admin-title">Painel Restrito</div>
+        </div>
+    </nav>
+
+    <div class="container admin-container">
+
+        <div id="login-admin" class="form-group text-center">
+            <h2>Área Restrita</h2>
+            <p>Insira a credencial administrativa para gerenciar o catálogo.</p>
+            <input type="password" id="senha" placeholder="Digite a senha de administrador"
+                style="margin-bottom: 15px;">
+            <button class="btn" onclick="login()" style="width: 100%;">Entrar no Painel</button>
+        </div>
+
+        <div id="painel-admin" style="display: none;">
+            <div class="admin-header-flex">
+                <h2 id="titulo-form">Cadastrar Novo Perfume</h2>
+                <button class="btn btn-logout" onclick="logout()">Sair</button>
+            </div>
+            
+            <input type="hidden" id="edit-id">
+            <input type="hidden" id="edit-chave">
+
+            <div id="admin-resumo" class="admin-summary-grid" aria-live="polite"></div>
+
+            <div class="admin-columns-grid" style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 30px;">
+                
+                <div>
+                    <div class="form-group">
+                        <label>Nome base do Perfume</label>
+                        <input type="text" id="nome" placeholder="Ex: Sauvage — sem 100ml no nome">
+                        <small class="admin-help-text">Cadastre o nome uma vez. Os volumes viram variações automaticamente.</small>
+
+                        <label>Marca</label>
+                        <select id="marca">
+                            <option value="">Carregando marcas...</option>
+                        </select>
+
+                        <label>Volumes disponíveis</label>
+                        <input type="text" id="volumes" placeholder="Ex: 30, 50, 100, 200">
+                        <div class="volume-quick-actions">
+                            <button type="button" onclick="preencherVolumesRapidos([30])">+30ml</button>
+                            <button type="button" onclick="preencherVolumesRapidos([50])">+50ml</button>
+                            <button type="button" onclick="preencherVolumesRapidos([100])">+100ml</button>
+                            <button type="button" onclick="preencherVolumesRapidos([200])">+200ml</button>
+                        </div>
+
+                        <label>URL da Imagem reutilizável</label>
+                        <input type="text" id="imagem" list="imagens-cadastradas" placeholder="Cole a imagem uma vez e reuse nas variações">
+                        <datalist id="imagens-cadastradas"></datalist>
+                        <div id="imagem-preview" class="admin-image-preview sem-imagem"><span>Prévia da imagem</span></div>
+
+                        <label>Notas Olfativas</label>
+                        <input type="text" id="notas" placeholder="Ex: Bergamota, Lavanda, Âmbar">
+
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="destaque">
+                            <span>Marcar como Destaque (Mais Procurado)</span>
+                        </label>
+
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="novidade" disabled>
+                            <span>Marcar como Recém-chegado</span>
+                        </label>
+                        <small class="admin-help-text" id="novidade-help" style="display: none;">Para salvar este selo, rode o SQL de novidade no Supabase.</small>
+                        
+                        <button class="btn btn-admin" id="btn-salvar" onclick="salvarProduto()">Adicionar ao Banco de Dados</button>
+                        <button class="btn btn-logout" id="btn-cancelar" onclick="cancelarEdicao()" style="display: none; margin-top: 10px; background-color: #555 !important;">Cancelar Edição</button>
+                    </div>
+                </div>
+
+                <div>
+                    <h3>Gerenciar Marcas</h3>
+                    <div class="form-group" style="display: flex; gap: 10px; margin-bottom: 20px;">
+                        <input type="text" id="nova-marca-nome" placeholder="Nome da nova marca (Ex: Versace)"
+                            style="margin-bottom: 0;">
+                        <input type="hidden" id="marca-edit-id">
+                        <input type="hidden" id="marca-edit-nome-original">
+                        <button class="btn" id="btn-salvar-marca" onclick="salvarMarca()" style="white-space: nowrap;">Adicionar Marca</button>
+                        <button class="btn btn-logout" id="btn-cancelar-marca" onclick="cancelarEdicaoMarca()" style="display: none; white-space: nowrap;">Cancelar</button>
+                    </div>
+
+                    <div class="lista-gerenciamento" style="max-height: 250px; overflow-y: auto;">
+                        <div id="lista-marcas-admin">
+                            <p>Carregando marcas...</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <h3 class="mt-40">Gerenciar Catálogo Ativo</h3>
+            <div class="admin-toolbar">
+                <input type="text" id="busca-admin" placeholder="Buscar por perfume, marca ou notas...">
+                <select id="filtro-marca-admin">
+                    <option value="">Todas as marcas</option>
+                </select>
+            </div>
+            <div class="admin-actions-flex admin-export-actions">
+                <button class="btn" type="button" onclick="exportarBanco('json')">Exportar JSON</button>
+                <button class="btn" type="button" onclick="exportarBanco('csv')">Exportar CSV</button>
+                <button class="btn" type="button" onclick="exportarClientesCSV()">Exportar Clientes CSV</button>
+            </div>
+            <div class="lista-gerenciamento">
+                <div id="lista-admin">
+                    <p>Carregando catálogo cadastrado...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/script.js"></script>
+</body>
+
+</html>
