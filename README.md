@@ -44,4 +44,4 @@ O script principal de producao fica em:
 supabase/sql/primor_rls_producao.sql
 ```
 
-Use esse arquivo quando precisar recriar funcoes, permissoes e politicas RLS. O arquivo `primor_admin_seguro.sql` foi mantido como apoio historico para a funcao de validacao do admin.
+Use esse arquivo quando precisar recriar funcoes, permissoes e politicas RLS.
