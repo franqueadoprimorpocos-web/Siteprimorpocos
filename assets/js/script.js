@@ -305,6 +305,9 @@ function aplicarMedidasImagemCatalogo(img, areaVisual = null) {
 
 function tentarMedirImagemComCors(img) {
     if (!img?.src || img.dataset.medicaoCorsTentada === "true") return;
+    const origemAtual = window.location.origin;
+    const origemImagem = new URL(img.currentSrc || img.src, window.location.href).origin;
+    if (origemImagem !== origemAtual) return;
 
     img.dataset.medicaoCorsTentada = "true";
     const probe = new Image();
