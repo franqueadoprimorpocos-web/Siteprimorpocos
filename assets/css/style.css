@@ -909,6 +909,19 @@ input[type="text"]::placeholder {
     transform: translateY(-1px);
 }
 
+.brand-chip-novidade {
+    border-color: rgba(197,160,89,0.48);
+    background: linear-gradient(135deg, #fffaf0, #ffffff);
+    color: #8c6728;
+}
+
+.brand-chip-novidade.active,
+.brand-chip-novidade:hover {
+    background: linear-gradient(135deg, #c5a059, #8f6727);
+    border-color: #c5a059;
+    color: #111;
+}
+
 .product-card {
     position: relative;
     overflow: hidden;

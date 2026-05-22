@@ -22,6 +22,7 @@ let perfumeSelecionadoParaWhatsApp = "";
 let marcaSelecionadaParaWhatsApp = "";
 let clienteAtual = carregarClienteLocal();
 let marcaSelecionadaCatalogo = "";
+let filtroEspecialCatalogo = "";
 let suporteCampoNovidade = false;
 
 const supabaseClient = window.supabase?.createClient
@@ -782,7 +783,10 @@ function atualizarMarcaAtiva(marca) {
     const termo = (marca || "").toLowerCase().trim();
     document.querySelectorAll(".brand-chip").forEach(chip => {
         const chipMarca = (chip.dataset.marca || "").toLowerCase().trim();
-        chip.classList.toggle("active", chipMarca === termo);
+        const chipFiltro = (chip.dataset.filtro || "").toLowerCase().trim();
+        const filtroAtivo = Boolean(filtroEspecialCatalogo) && chipFiltro === filtroEspecialCatalogo;
+        const marcaAtiva = !filtroEspecialCatalogo && !chipFiltro && chipMarca === termo;
+        chip.classList.toggle("active", filtroAtivo || marcaAtiva);
     });
 }
 
@@ -931,6 +935,7 @@ function renderizarProdutos(produtos) {
     const containerDestaques = document.getElementById("highlights-list");
     const secaoDestaques = document.getElementById("secao-destaques");
     const produtosUnicos = agruparProdutosPorPerfume(produtos)
+        .filter(produto => filtroEspecialCatalogo === "novidades" ? produtoEhNovidade(produto) : true)
         .sort((a, b) => compararTextoPtBr(obterMarcaProduto(a), obterMarcaProduto(b)) || compararTextoPtBr(a.nome, b.nome));
 
     if (!container) return;
@@ -954,7 +959,9 @@ function renderizarProdutos(produtos) {
     }
 
     if (produtosUnicos.length === 0) {
-        container.innerHTML = "<p class='catalog-empty'>Nenhum perfume cadastrado ou encontrado.</p>";
+        container.innerHTML = filtroEspecialCatalogo === "novidades"
+            ? "<p class='catalog-empty'>Nenhum recém-chegado disponível no momento.</p>"
+            : "<p class='catalog-empty'>Nenhum perfume cadastrado ou encontrado.</p>";
         return;
     }
 
@@ -1040,8 +1047,9 @@ function criarCardHTML(produto) {
 }
 
 function filtrarMarca(marca) {
-    mostrarSecao('catalogo');
     marcaSelecionadaCatalogo = marca || "";
+    filtroEspecialCatalogo = "";
+    mostrarSecao('catalogo');
     atualizarMarcaAtiva(marca);
     fecharMenuMobile();
     
@@ -1062,6 +1070,16 @@ function filtrarMarca(marca) {
     renderizarProdutos(filtrados);
 }
 
+function filtrarNovidades() {
+    marcaSelecionadaCatalogo = "";
+    filtroEspecialCatalogo = "novidades";
+    mostrarSecao("catalogo");
+    atualizarMarcaAtiva("");
+    fecharMenuMobile();
+    if (searchInput) searchInput.value = "";
+    renderizarProdutos(cacheProdutos);
+}
+
 // Inicializador da Vitrine
 carregarProdutos();
 
@@ -1070,8 +1088,9 @@ const searchInput = document.getElementById("search");
 if (searchInput) {
     searchInput.addEventListener("input", function() {
         const termo = this.value.toLowerCase().trim();
-        if (termo) mostrarSecao("catalogo");
         marcaSelecionadaCatalogo = "";
+        filtroEspecialCatalogo = "";
+        if (termo) mostrarSecao("catalogo");
         atualizarMarcaAtiva("");
         const filtrados = cacheProdutos.filter(p => {
             const nome = p.nome ? p.nome.toLowerCase() : '';
@@ -1763,7 +1782,10 @@ async function carregarMarcas() {
         // Dropdown de Marcas na Vitrine
         const dropdownMarcas = document.getElementById("dropdown-marcas");
         if (dropdownMarcas) {
-            dropdownMarcas.innerHTML = `<a href="#" onclick="filtrarMarca('')" style="font-weight: bold; border-bottom: 1px solid rgba(197,160,89,0.18);">Todas as Marcas</a>`;
+            dropdownMarcas.innerHTML = `
+                <a href="#" onclick="filtrarMarca('')" style="font-weight: bold; border-bottom: 1px solid rgba(197,160,89,0.18);">Todas as Marcas</a>
+                <a href="#" onclick="filtrarNovidades()" style="font-weight: bold; color: #c5a059;">Recém chegados</a>
+            `;
             marcas.forEach(m => {
                 const nomeMarca = escaparHTML(m.nome);
                 const marcaJS = escaparAtributoJS(m.nome);
@@ -1773,7 +1795,10 @@ async function carregarMarcas() {
 
         const brandFilterList = document.getElementById("brand-filter-list");
         if (brandFilterList) {
-            brandFilterList.innerHTML = `<button type="button" class="brand-chip active" data-marca="" onclick="filtrarMarca('')">Todas</button>`;
+            brandFilterList.innerHTML = `
+                <button type="button" class="brand-chip active" data-marca="" onclick="filtrarMarca('')">Todas</button>
+                <button type="button" class="brand-chip brand-chip-novidade" data-filtro="novidades" onclick="filtrarNovidades()">Recém chegados</button>
+            `;
             marcas.forEach(m => {
                 const nomeMarca = escaparHTML(m.nome);
                 const marcaJS = escaparAtributoJS(m.nome);
