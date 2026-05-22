@@ -1,0 +1,25 @@
+{
+  "files.exclude": {
+    "**/.git": true,
+    "**/.env": true,
+    "**/.env.*": true,
+    "**/.env.example": false,
+    "**/assets/js/env.js": true,
+    "**/public": true,
+    "**/node_modules": true,
+    "**/dist": true
+  },
+  "search.exclude": {
+    "**/.git": true,
+    "**/.env": true,
+    "**/.env.*": true,
+    "**/.env.example": false,
+    "**/assets/js/env.js": true,
+    "**/public": true,
+    "**/node_modules": true,
+    "**/dist": true
+  },
+  "files.encoding": "utf8",
+  "files.eol": "\n",
+  "editor.formatOnSave": false
+}

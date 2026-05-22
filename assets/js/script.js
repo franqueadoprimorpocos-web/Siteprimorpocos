@@ -3,7 +3,7 @@ const SUPABASE_URL = window.PRIMOR_ENV?.SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = window.PRIMOR_ENV?.SUPABASE_ANON_KEY || "";
 const SUPABASE_CONFIG_OK = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 const numeroAtendimento = "5535999638019"; // Seu WhatsApp de atendimento
-const CLIENTES_API_ATIVA = true; // Execute primor_melhoria_banco.sql no Supabase antes de publicar em produção
+const CLIENTES_API_ATIVA = true; // Execute supabase/sql/primor_rls_producao.sql no Supabase antes de publicar em producao
 
 const headers = {
     "apikey": SUPABASE_ANON_KEY,
@@ -428,7 +428,11 @@ function montarDescricaoPerfumeMensagem() {
     const marca = formatarMarcaMensagem(marcaSelecionadaParaWhatsApp);
 
     if (perfume && marca) return `${perfume}, da marca ${marca}`;
-    return perfume || "selecionado no site";
+    return perfume || "selecionado no catálogo";
+}
+
+function clienteTemCadastroCompleto() {
+    return cadastroClienteCompleto(clienteAtual);
 }
 
 function limparValorNulo(valor) {
@@ -789,8 +793,27 @@ function abrirModalAtendimento(nomePerfume, marcaPerfume = "") {
     perfumeSelecionadoParaWhatsApp = nomePerfume;
     marcaSelecionadaParaWhatsApp = marcaPerfume;
     preencherFormularioCliente("cliente");
+    const clienteCadastrado = clienteTemCadastroCompleto();
+    const primeiroNome = primeiroNomeCliente(clienteAtual);
+    const titulo = document.getElementById("modal-consulta-titulo");
+    const texto = document.getElementById("modal-consulta-texto");
+    const acao = document.getElementById("modal-consulta-acao");
+    const detalhe = document.getElementById("modal-consulta-detalhe");
+    const botaoCadastro = document.getElementById("btn-cadastrar-antes") || document.querySelector(".modal-secondary-action");
     const perfumeModal = document.getElementById("modal-perfume-nome");
     if (perfumeModal) perfumeModal.textContent = montarDescricaoPerfumeMensagem();
+    if (titulo) titulo.textContent = clienteCadastrado ? `${primeiroNome}, finalizar consulta` : "Finalizar consulta";
+    if (texto) {
+        texto.textContent = clienteCadastrado
+            ? "Seu cadastro já está salvo. Vamos enviar uma mensagem objetiva para a equipe continuar pelo WhatsApp."
+            : "Escolha como deseja seguir. A equipe recebe o perfume selecionado e continua o atendimento pelo WhatsApp.";
+    }
+    if (acao) acao.textContent = clienteCadastrado ? "Consultar como cliente" : "Consultar agora";
+    if (detalhe) detalhe.textContent = clienteCadastrado ? "Usar seus dados salvos no atendimento" : "Ir direto para o WhatsApp";
+    if (botaoCadastro) {
+        botaoCadastro.hidden = clienteCadastrado;
+        botaoCadastro.style.display = clienteCadastrado ? "none" : "";
+    }
     const modal = document.getElementById("modal-whatsapp");
     if (modal) {
         modal.style.display = "flex";
@@ -811,7 +834,7 @@ function abrirWhatsAppConsulta(nomeCliente = "") {
     const saudacao = nomeFormatado
         ? `Olá! Meu nome é ${nomeFormatado}.`
         : "Olá!";
-    const mensagemText = `${saudacao} Vim pelo site da Primor e gostaria de consultar a disponibilidade do perfume ${perfumeDescricao}.`;
+    const mensagemText = `${saudacao} Vim pelo catálogo da Primor e gostaria de consultar a disponibilidade do perfume ${perfumeDescricao}.`;
     const linkWhatsApp = `https://wa.me/${numeroAtendimento}?text=${encodeURIComponent(mensagemText)}`;
     window.open(linkWhatsApp, "_blank");
 }
@@ -819,7 +842,7 @@ function abrirWhatsAppConsulta(nomeCliente = "") {
 function consultaDiretaWhatsApp() {
     const botao = document.getElementById("btn-consulta-direta");
     if (botao) botao.disabled = true;
-    abrirWhatsAppConsulta();
+    abrirWhatsAppConsulta(clienteTemCadastroCompleto() ? clienteAtual.nome : "");
     if (botao) botao.disabled = false;
     fecharModal();
 }
@@ -1102,7 +1125,7 @@ async function login() {
         });
 
         if (!rpcResponse.ok) {
-            throw new Error("Função validar_admin_primor indisponível. Rode primor_admin_seguro.sql no Supabase.");
+            throw new Error("Funcao validar_admin_primor indisponivel. Rode supabase/sql/primor_rls_producao.sql no Supabase.");
         }
 
         const autorizado = await rpcResponse.json();
@@ -1702,7 +1725,7 @@ async function exportarClientesCSV() {
         baixarArquivo(`primor-clientes-${data}.csv`, `\ufeff${linhas.join("\n")}`, "text/csv;charset=utf-8");
     } catch (error) {
         console.error(error);
-        alert("Não foi possível exportar clientes. Rode o SQL primor_clientes_simples_sem_funcoes.sql no Supabase.");
+        alert("Não foi possível exportar clientes. Confira se o SQL supabase/sql/primor_rls_producao.sql foi aplicado no Supabase.");
     }
 }
 
