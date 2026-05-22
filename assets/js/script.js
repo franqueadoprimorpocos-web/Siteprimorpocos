@@ -594,68 +594,10 @@ async function registrarCliente(cliente, origem, authUserId = null) {
 
         if (rpcResponse.ok) return true;
     } catch (error) {
-        console.warn("Função de cliente indisponível, tentando fallback REST:", error);
-    }
-
-    const payload = {
-        nome: limparValorNulo(cliente.nome),
-        email: limparValorNulo(cliente.email),
-        telefone: limparValorNulo(cliente.telefone),
-        cpf: limparValorNulo(cliente.cpf),
-        data_nascimento: limparValorNulo(cliente.data_nascimento),
-        origem,
-        auth_user_id: authUserId || cliente.auth_user_id || null,
-        updated_at: new Date().toISOString()
-    };
-
-    Object.keys(payload).forEach(chave => {
-        if (payload[chave] === null || payload[chave] === "") delete payload[chave];
-    });
-
-    const condicoes = [];
-    if (payload.telefone) condicoes.push(`telefone.eq.${payload.telefone}`);
-    if (payload.email) condicoes.push(`email.eq.${payload.email}`);
-    if (payload.cpf) condicoes.push(`cpf.eq.${payload.cpf}`);
-    if (!condicoes.length) return false;
-
-    try {
-        const busca = await fetch(`${SUPABASE_URL}/rest/v1/clientes?select=id&or=${encodeURIComponent(`(${condicoes.join(",")})`)}&limit=1`, {
-            method: "GET",
-            headers
-        });
-
-        if (!busca.ok) {
-            const erro = await busca.text();
-            console.warn("Falha ao atualizar cliente:", erro);
-            return false;
-        }
-
-        const encontrados = await busca.json();
-        const clienteExistente = encontrados[0];
-        const url = clienteExistente
-            ? `${SUPABASE_URL}/rest/v1/clientes?id=eq.${clienteExistente.id}`
-            : `${SUPABASE_URL}/rest/v1/clientes`;
-
-        const response = await fetch(url, {
-            method: clienteExistente ? "PATCH" : "POST",
-            headers: {
-                ...headers,
-                "Prefer": "return=representation"
-            },
-            body: JSON.stringify(clienteExistente ? payload : [payload])
-        });
-
-        if (!response.ok) {
-            const erro = await response.text();
-            console.warn("Falha ao salvar cliente:", erro);
-            return false;
-        }
-
-        return true;
-    } catch (error) {
         console.warn("Erro ao registrar cliente:", error);
-        return false;
     }
+
+    return false;
 }
 
 function obterRedirectAtual() {
@@ -704,19 +646,18 @@ async function sincronizarClienteAutenticado() {
 async function buscarClientePorAcesso() {
     const emailAcesso = normalizarEmail(document.getElementById("cliente-login-email")?.value || document.getElementById("cliente-login-email-form")?.value || "");
     const telefoneAcesso = normalizarTelefone(document.getElementById("cliente-login-telefone")?.value || "");
-    const condicoes = [];
-
-    if (emailAcesso) condicoes.push(`email.eq.${emailAcesso}`);
-    if (telefoneAcesso) condicoes.push(`telefone.eq.${telefoneAcesso}`);
-
-    if (!condicoes.length) {
+    if (!emailAcesso && !telefoneAcesso) {
         definirFeedbackCliente("Informe e-mail ou telefone para acessar seu cadastro.", "erro");
         return null;
     }
 
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/clientes?select=nome,email,telefone,cpf,data_nascimento,origem,updated_at&or=${encodeURIComponent(`(${condicoes.join(",")})`)}&order=updated_at.desc&limit=1`, {
-        method: "GET",
-        headers
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/buscar_cliente_publico`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+            p_email: emailAcesso || null,
+            p_telefone: telefoneAcesso || null
+        })
     });
 
     if (!response.ok) throw new Error(await response.text());
@@ -1314,6 +1255,46 @@ function produtoAtualPorVolume(grupo, volume) {
     return grupo?.variacoes?.find(produto => obterVolumeProduto(produto) === volume) || null;
 }
 
+async function chamarRpcAdmin(nomeFuncao, payload = {}) {
+    const senhaAdmin = sessionStorage.getItem("admin_senha");
+
+    if (!senhaAdmin) {
+        alert("Entre novamente no painel antes de alterar o catálogo.");
+        logout();
+        throw new Error("Senha admin ausente na sessão.");
+    }
+
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${nomeFuncao}`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+            p_senha: senhaAdmin,
+            ...payload
+        })
+    });
+
+    if (!response.ok) {
+        const erro = await response.text();
+        throw new Error(erro || `Falha ao executar ${nomeFuncao}.`);
+    }
+
+    if (response.status === 204) return null;
+    const texto = await response.text();
+    return texto ? JSON.parse(texto) : null;
+}
+
+function montarPayloadPerfumeAdmin(produto, id = null) {
+    return {
+        p_id: id,
+        p_nome: produto.nome,
+        p_marca: produto.marca,
+        p_imagem: produto.imagem || "",
+        p_notas: produto.notas || "",
+        p_destaque: produtoEhDestaque(produto),
+        p_novidade: produtoEhNovidade(produto)
+    };
+}
+
 async function salvarProduto() {
     const nomeBaseOriginal = document.getElementById("nome").value.trim();
     const nomeBase = obterNomeBaseProduto({ nome: nomeBaseOriginal }) || nomeBaseOriginal;
@@ -1354,23 +1335,7 @@ async function salvarProduto() {
         for (const registro of registros) {
             const volume = obterVolumeProduto(registro);
             const existente = produtoAtualPorVolume(grupoAtual, volume);
-
-            const response = existente
-                ? await fetch(`${SUPABASE_URL}/rest/v1/perfumes?id=eq.${existente.id}`, {
-                    method: "PATCH",
-                    headers,
-                    body: JSON.stringify(registro)
-                })
-                : await fetch(`${SUPABASE_URL}/rest/v1/perfumes`, {
-                    method: "POST",
-                    headers,
-                    body: JSON.stringify(registro)
-                });
-
-            if (!response.ok) {
-                const erro = await response.text();
-                throw new Error(erro || "Falha ao salvar variação.");
-            }
+            await chamarRpcAdmin("admin_upsert_perfume", montarPayloadPerfumeAdmin(registro, existente?.id || null));
         }
 
         if (grupoAtual) {
@@ -1381,10 +1346,7 @@ async function salvarProduto() {
             });
 
             for (const produto of removidos) {
-                await fetch(`${SUPABASE_URL}/rest/v1/perfumes?id=eq.${produto.id}`, {
-                    method: "DELETE",
-                    headers
-                });
+                await chamarRpcAdmin("admin_delete_perfume", { p_id: produto.id });
             }
         }
 
@@ -1471,12 +1433,7 @@ async function deletarProduto(id) {
     if (!confirm("Tem certeza que deseja remover este perfume?")) return;
 
     try {
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/perfumes?id=eq.${id}`, {
-            method: "DELETE",
-            headers: headers
-        });
-
-        if (!response.ok) throw new Error("Não pôde deletar.");
+        await chamarRpcAdmin("admin_delete_perfume", { p_id: id });
         carregarProdutosAdmin();
         carregarProdutos();
     } catch (e) {
@@ -1492,11 +1449,7 @@ async function deletarGrupo(chave) {
 
     try {
         for (const produto of grupo.variacoes) {
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/perfumes?id=eq.${produto.id}`, {
-                method: "DELETE",
-                headers
-            });
-            if (!response.ok) throw new Error("Falha ao excluir uma variação.");
+            await chamarRpcAdmin("admin_delete_perfume", { p_id: produto.id });
         }
         carregarProdutosAdmin();
         carregarProdutos();
@@ -1725,19 +1678,8 @@ async function exportarClientesCSV() {
             body: JSON.stringify({ p_senha: senhaAdmin })
         });
 
-        let clientes = [];
-
-        if (response.ok) {
-            clientes = await response.json();
-        } else {
-            const fallback = await fetch(`${SUPABASE_URL}/rest/v1/clientes?select=id,nome,email,telefone,cpf,data_nascimento,origem,created_at,updated_at&order=created_at.desc`, {
-                method: "GET",
-                headers
-            });
-
-            if (!fallback.ok) throw new Error(await fallback.text());
-            clientes = await fallback.json();
-        }
+        if (!response.ok) throw new Error(await response.text());
+        const clientes = await response.json();
 
         const data = new Date().toISOString().slice(0, 10);
         const colunas = [
@@ -1902,25 +1844,10 @@ async function cadastrarMarca() {
     }
 
     try {
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/marcas`, {
-            method: "POST",
-            headers: {
-                ...headers,
-                "Prefer": "return=representation"
-            },
-            body: JSON.stringify({ nome: nomeMarca })
+        await chamarRpcAdmin("admin_upsert_marca", {
+            p_id: null,
+            p_nome: nomeMarca
         });
-
-        if (!response.ok) {
-            const txt = await response.text();
-            if (txt.includes("duplicate key")) {
-                alert("Esta marca já está cadastrada!");
-            } else {
-                throw new Error("Erro ao salvar marca.");
-            }
-            return;
-        }
-
         cancelarEdicaoMarca();
         alert("Marca cadastrada com sucesso!");
         await carregarMarcas(); // Recarrega todas as listas de marcas
@@ -1942,37 +1869,21 @@ async function atualizarMarca(id) {
     }
 
     try {
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/marcas?id=eq.${encodeURIComponent(id)}`, {
-            method: "PATCH",
-            headers: {
-                ...headers,
-                "Prefer": "return=representation"
-            },
-            body: JSON.stringify({ nome: nomeMarca })
+        await chamarRpcAdmin("admin_upsert_marca", {
+            p_id: Number(id),
+            p_nome: nomeMarca
         });
 
-        if (!response.ok) {
-            const txt = await response.text();
-            if (txt.includes("duplicate key")) {
-                alert("Já existe uma marca com este nome.");
-            } else {
-                throw new Error("Erro ao atualizar marca.");
-            }
-            return;
-        }
-
         if (nomeOriginal && nomeOriginal !== nomeMarca) {
-            const perfumesResponse = await fetch(`${SUPABASE_URL}/rest/v1/perfumes?marca=eq.${encodeURIComponent(nomeOriginal)}`, {
-                method: "PATCH",
-                headers: {
-                    ...headers,
-                    "Prefer": "return=minimal"
-                },
-                body: JSON.stringify({ marca: nomeMarca })
-            });
+            const produtosParaAtualizar = cacheProdutosAdmin.filter(produto =>
+                compararTextoPtBr(obterMarcaProduto(produto), nomeOriginal) === 0
+            );
 
-            if (!perfumesResponse.ok) {
-                throw new Error("Marca salva, mas não foi possível atualizar os perfumes vinculados.");
+            for (const produto of produtosParaAtualizar) {
+                await chamarRpcAdmin("admin_upsert_perfume", montarPayloadPerfumeAdmin({
+                    ...produto,
+                    marca: nomeMarca
+                }, produto.id));
             }
 
             cacheProdutos = cacheProdutos.map(produto =>
@@ -2003,12 +1914,7 @@ async function deletarMarca(id) {
     if (!confirm("Tem certeza que deseja remover esta marca? Os perfumes desta marca não serão apagados, mas ficarão sem categoria correspondente.")) return;
 
     try {
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/marcas?id=eq.${id}`, {
-            method: "DELETE",
-            headers: headers
-        });
-
-        if (!response.ok) throw new Error("Erro ao deletar marca.");
+        await chamarRpcAdmin("admin_delete_marca", { p_id: Number(id) });
 
         alert("Marca removida com sucesso!");
         await carregarMarcas(); // Atualiza as listagens
