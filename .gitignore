@@ -1,0 +1,9 @@
+.env
+.env.*
+!.env.example
+assets/js/env.js
+.vercel
+node_modules
+dist
+.DS_Store
+Thumbs.db
