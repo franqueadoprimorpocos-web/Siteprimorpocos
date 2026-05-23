@@ -35,9 +35,18 @@
         </div>
 
         <div id="painel-admin" style="display: none;">
-            <div class="admin-header-flex">
-                <h2 id="titulo-form">Cadastrar Novo Perfume</h2>
-                <button class="btn btn-logout" onclick="logout()">Sair</button>
+            <div class="admin-hero">
+                <div>
+                    <span class="admin-eyebrow">Gestao Primor</span>
+                    <h1>Painel do catalogo</h1>
+                    <p>Cadastre perfumes, organize marcas, acompanhe novidades e mantenha a vitrine pronta para atendimento.</p>
+                </div>
+                <div class="admin-quick-links">
+                    <a href="#cadastro-produto">Cadastrar perfume</a>
+                    <a href="#marcas-admin">Marcas</a>
+                    <a href="#catalogo-admin">Catalogo ativo</a>
+                    <button class="btn btn-logout" onclick="logout()">Sair</button>
+                </div>
             </div>
             
             <input type="hidden" id="edit-id">
@@ -45,10 +54,15 @@
 
             <div id="admin-resumo" class="admin-summary-grid" aria-live="polite"></div>
 
-            <div class="admin-columns-grid" style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 30px;">
+            <div class="admin-columns-grid" id="cadastro-produto">
                 
                 <div>
                     <div class="form-group">
+                        <div class="admin-card-heading">
+                            <span>Cadastro inteligente</span>
+                            <h2 id="titulo-form">Cadastrar Novo Perfume</h2>
+                        </div>
+
                         <label>Nome base do Perfume</label>
                         <input type="text" id="nome" placeholder="Ex: Sauvage — sem 100ml no nome">
                         <small class="admin-help-text">Cadastre o nome uma vez. Os volumes viram variações automaticamente.</small>
@@ -77,23 +91,42 @@
 
                         <label class="checkbox-container">
                             <input type="checkbox" id="destaque">
-                            <span>Marcar como Destaque (Mais Procurado)</span>
+                            <span>Marcar na Vitrine</span>
                         </label>
 
                         <label class="checkbox-container">
                             <input type="checkbox" id="novidade" disabled>
                             <span>Marcar como Recém-chegado</span>
                         </label>
-                        <small class="admin-help-text" id="novidade-help" style="display: none;">Para salvar este selo, rode o SQL de novidade no Supabase.</small>
+                        <label>Exibir recém-chegado até</label>
+                        <input type="date" id="novidade-ate" disabled>
+                        <small class="admin-help-text" id="novidade-help" style="display: none;">Para salvar este selo, rode o SQL atualizado no Supabase.</small>
+
+                        <div class="admin-status-box">
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="esgotado" disabled>
+                                <span>Produto esgotado</span>
+                            </label>
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="sob-demanda" disabled>
+                                <span>Disponível sob demanda / encomenda</span>
+                            </label>
+                            <label>Tempo de espera ou reposição</label>
+                            <input type="text" id="prazo-reposicao" placeholder="Ex: 7 a 15 dias úteis" disabled>
+                            <small class="admin-help-text" id="disponibilidade-help" style="display: none;">Para salvar disponibilidade, rode o SQL atualizado no Supabase.</small>
+                        </div>
                         
                         <button class="btn btn-admin" id="btn-salvar" onclick="salvarProduto()">Adicionar ao Banco de Dados</button>
                         <button class="btn btn-logout" id="btn-cancelar" onclick="cancelarEdicao()" style="display: none; margin-top: 10px; background-color: #555 !important;">Cancelar Edição</button>
                     </div>
                 </div>
 
-                <div>
-                    <h3>Gerenciar Marcas</h3>
-                    <div class="form-group" style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <div class="admin-side-panel" id="marcas-admin">
+                    <div class="admin-card-heading">
+                        <span>Organizacao</span>
+                        <h3>Gerenciar Marcas</h3>
+                    </div>
+                    <div class="form-group admin-brand-form">
                         <input type="text" id="nova-marca-nome" placeholder="Nome da nova marca (Ex: Versace)"
                             style="margin-bottom: 0;">
                         <input type="hidden" id="marca-edit-id">
@@ -111,11 +144,24 @@
 
             </div>
 
-            <h3 class="mt-40">Gerenciar Catálogo Ativo</h3>
+            <div class="admin-section-header mt-40" id="catalogo-admin">
+                <div>
+                    <span>Operacao diaria</span>
+                    <h3>Gerenciar Catalogo Ativo</h3>
+                </div>
+            </div>
             <div class="admin-toolbar">
                 <input type="text" id="busca-admin" placeholder="Buscar por perfume, marca ou notas...">
                 <select id="filtro-marca-admin">
                     <option value="">Todas as marcas</option>
+                </select>
+                <select id="filtro-status-admin">
+                    <option value="">Todos os status</option>
+                    <option value="vitrine">Vitrine</option>
+                    <option value="novidade">Recem chegados</option>
+                    <option value="esgotado">Esgotados</option>
+                    <option value="demanda">Sob demanda</option>
+                    <option value="sem-imagem">Sem imagem</option>
                 </select>
             </div>
             <div class="admin-actions-flex admin-export-actions">

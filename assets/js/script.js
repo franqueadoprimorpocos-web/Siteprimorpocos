@@ -24,6 +24,7 @@ let clienteAtual = carregarClienteLocal();
 let marcaSelecionadaCatalogo = "";
 let filtroEspecialCatalogo = "";
 let suporteCampoNovidade = false;
+let suporteCamposDisponibilidade = false;
 
 const supabaseClient = window.supabase?.createClient
     ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
@@ -65,8 +66,44 @@ function produtoEhDestaque(produto) {
     return produto?.destaque === true || produto?.destaque === "true";
 }
 
+function dataISOHoje() {
+    return new Date().toISOString().slice(0, 10);
+}
+
+function adicionarDiasISO(dias) {
+    const data = new Date();
+    data.setDate(data.getDate() + Number(dias || 0));
+    return data.toISOString().slice(0, 10);
+}
+
+function obterDataISO(valor) {
+    const texto = String(valor ?? "").trim();
+    if (!texto) return "";
+    return texto.slice(0, 10);
+}
+
+function obterNovidadeAte(produto) {
+    return obterDataISO(produto?.novidade_ate);
+}
+
 function produtoEhNovidade(produto) {
-    return produto?.novidade === true || produto?.novidade === "true";
+    const marcado = produto?.novidade === true || produto?.novidade === "true";
+    if (!marcado) return false;
+
+    const novidadeAte = obterNovidadeAte(produto);
+    return !novidadeAte || novidadeAte >= dataISOHoje();
+}
+
+function produtoEsgotado(produto) {
+    return produto?.esgotado === true || produto?.esgotado === "true";
+}
+
+function produtoSobDemanda(produto) {
+    return produto?.sob_demanda === true || produto?.sob_demanda === "true";
+}
+
+function obterPrazoReposicao(produto) {
+    return String(produto?.prazo_reposicao ?? "").trim();
 }
 
 function chaveProduto(produto) {
@@ -131,7 +168,13 @@ function agruparProdutosPorPerfume(produtos) {
         if (!produtoEhDestaque(existente) && produtoEhDestaque(produto)) {
             existente.destaque = produto.destaque;
         }
-        if (!produtoEhNovidade(existente) && produtoEhNovidade(produto)) existente.novidade = produto.novidade;
+        if (!produtoEhNovidade(existente) && produtoEhNovidade(produto)) {
+            existente.novidade = produto.novidade;
+            existente.novidade_ate = produto.novidade_ate;
+        }
+        if (!produtoEsgotado(existente) && produtoEsgotado(produto)) existente.esgotado = produto.esgotado;
+        if (!produtoSobDemanda(existente) && produtoSobDemanda(produto)) existente.sob_demanda = produto.sob_demanda;
+        if (!obterPrazoReposicao(existente) && obterPrazoReposicao(produto)) existente.prazo_reposicao = produto.prazo_reposicao;
     });
 
     return [...grupos.values()];
@@ -943,7 +986,7 @@ function renderizarProdutos(produtos) {
     container.innerHTML = "";
     if (containerDestaques) containerDestaques.innerHTML = "";
 
-    // Filtra e exibe os destaques (Mais Procurados)
+    // Filtra e exibe os produtos da vitrine.
     const destaques = produtosUnicos.filter(produtoEhDestaque);
     
     if (destaques.length > 0 && containerDestaques && secaoDestaques) {
@@ -1021,9 +1064,18 @@ function criarCardHTML(produto) {
     const imagemDisplay = imagemSegura
         ? `<img src="${imagemSegura}" alt="${nomeSeguro}" loading="lazy" onload="padronizarImagemCatalogo(this)" onerror="tratarErroImagem(this)">`
         : "";
+    const esgotado = produtoEsgotado(produto);
+    const sobDemanda = produtoSobDemanda(produto);
+    const prazoReposicao = obterPrazoReposicao(produto);
+    const statusDisplay = esgotado || sobDemanda || prazoReposicao
+        ? `<p class="status-texto ${esgotado ? "status-esgotado" : "status-demanda"}">${esgotado ? "Esgotado no momento" : "Sob demanda"}${prazoReposicao ? ` · ${escaparHTML(prazoReposicao)}` : ""}</p>`
+        : "";
+    const textoBotao = esgotado ? "Consultar reposição" : sobDemanda ? "Consultar encomenda" : "Consultar disponibilidade";
     const selos = [
-        produtoEhDestaque(produto) ? `<span class="card-ribbon card-ribbon-destaque">Mais procurado</span>` : "",
-        produtoEhNovidade(produto) ? `<span class="card-ribbon card-ribbon-novo">Recém-chegado</span>` : ""
+        produtoEhDestaque(produto) ? `<span class="card-ribbon card-ribbon-destaque">Vitrine</span>` : "",
+        produtoEhNovidade(produto) ? `<span class="card-ribbon card-ribbon-novo">Recém-chegado</span>` : "",
+        esgotado ? `<span class="card-ribbon card-ribbon-esgotado">Esgotado</span>` : "",
+        !esgotado && sobDemanda ? `<span class="card-ribbon card-ribbon-demanda">Sob demanda</span>` : ""
     ].filter(Boolean).join("");
     const marcaDisplay = `<span class="card-marca-tag">${escaparHTML(obterMarcaProduto(produto))}</span>`;
     
@@ -1038,8 +1090,9 @@ function criarCardHTML(produto) {
                 <h3>${nomeSeguro}</h3>
                 ${volumesDisplay}
                 ${notasDisplay}
+                ${statusDisplay}
                 <button class="btn" onclick="abrirModalAtendimento('${nomeEscapado}', '${marcaEscapada}')">
-                    Consultar disponibilidade
+                    ${textoBotao}
                 </button>
             </div>
         </div>
@@ -1118,6 +1171,7 @@ function verificarAcesso() {
             painel.style.display = "block";
             loginSec.style.display = "none";
             verificarSuporteCampoNovidade();
+            verificarSuporteCamposDisponibilidade();
             carregarProdutosAdmin();
             carregarMarcas();
         }
@@ -1190,11 +1244,12 @@ function preencherVolumesRapidos(volumes) {
 
 async function verificarSuporteCampoNovidade() {
     const checkbox = document.getElementById("novidade");
+    const inputPrazo = document.getElementById("novidade-ate");
     const ajuda = document.getElementById("novidade-help");
     if (!checkbox) return;
 
     try {
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/perfumes?select=novidade&limit=1`, {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/perfumes?select=novidade,novidade_ate&limit=1`, {
             method: "GET",
             headers
         });
@@ -1205,7 +1260,34 @@ async function verificarSuporteCampoNovidade() {
     }
 
     checkbox.disabled = !suporteCampoNovidade;
+    if (inputPrazo) inputPrazo.disabled = !suporteCampoNovidade;
     if (ajuda) ajuda.style.display = suporteCampoNovidade ? "none" : "block";
+}
+
+async function verificarSuporteCamposDisponibilidade() {
+    const controles = [
+        document.getElementById("esgotado"),
+        document.getElementById("sob-demanda"),
+        document.getElementById("prazo-reposicao")
+    ].filter(Boolean);
+    const ajuda = document.getElementById("disponibilidade-help");
+    if (!controles.length) return;
+
+    try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/perfumes?select=esgotado,sob_demanda,prazo_reposicao&limit=1`, {
+            method: "GET",
+            headers
+        });
+
+        suporteCamposDisponibilidade = response.ok;
+    } catch (error) {
+        suporteCamposDisponibilidade = false;
+    }
+
+    controles.forEach(controle => {
+        controle.disabled = !suporteCamposDisponibilidade;
+    });
+    if (ajuda) ajuda.style.display = suporteCamposDisponibilidade ? "none" : "block";
 }
 
 function montarNomeProduto(nomeBase, volume) {
@@ -1237,6 +1319,10 @@ function agruparProdutosAdmin(produtos) {
                 notas: produto.notas || "",
                 destaque: produtoEhDestaque(produto),
                 novidade: produtoEhNovidade(produto),
+                novidade_ate: obterNovidadeAte(produto),
+                esgotado: produtoEsgotado(produto),
+                sob_demanda: produtoSobDemanda(produto),
+                prazo_reposicao: obterPrazoReposicao(produto),
                 variacoes: [],
                 volumes: []
             });
@@ -1248,7 +1334,14 @@ function agruparProdutosAdmin(produtos) {
         if (!grupo.imagem && normalizarImagemProduto(produto.imagem)) grupo.imagem = produto.imagem;
         if (!grupo.notas && produto.notas) grupo.notas = produto.notas;
         if (produtoEhDestaque(produto)) grupo.destaque = true;
-        if (produtoEhNovidade(produto)) grupo.novidade = true;
+        if (produtoEhNovidade(produto)) {
+            grupo.novidade = true;
+            const novidadeAte = obterNovidadeAte(produto);
+            if (novidadeAte && (!grupo.novidade_ate || novidadeAte > grupo.novidade_ate)) grupo.novidade_ate = novidadeAte;
+        }
+        if (produtoEsgotado(produto)) grupo.esgotado = true;
+        if (produtoSobDemanda(produto)) grupo.sob_demanda = true;
+        if (!grupo.prazo_reposicao && obterPrazoReposicao(produto)) grupo.prazo_reposicao = produto.prazo_reposicao;
     });
 
     grupos.forEach(grupo => {
@@ -1326,15 +1419,27 @@ async function chamarRpcAdmin(nomeFuncao, payload = {}) {
 }
 
 function montarPayloadPerfumeAdmin(produto, id = null) {
-    return {
+    const payload = {
         p_id: id,
         p_nome: produto.nome,
         p_marca: produto.marca,
         p_imagem: produto.imagem || "",
         p_notas: produto.notas || "",
-        p_destaque: produtoEhDestaque(produto),
-        p_novidade: produtoEhNovidade(produto)
+        p_destaque: produtoEhDestaque(produto)
     };
+
+    if (suporteCampoNovidade) {
+        payload.p_novidade = produtoEhNovidade(produto);
+        payload.p_novidade_ate = obterNovidadeAte(produto) || null;
+    }
+
+    if (suporteCamposDisponibilidade) {
+        payload.p_esgotado = produtoEsgotado(produto);
+        payload.p_sob_demanda = produtoSobDemanda(produto);
+        payload.p_prazo_reposicao = obterPrazoReposicao(produto);
+    }
+
+    return payload;
 }
 
 async function salvarProduto() {
@@ -1345,6 +1450,12 @@ async function salvarProduto() {
     const notas = document.getElementById("notas").value.trim();
     const destaque = document.getElementById("destaque").checked;
     const novidade = document.getElementById("novidade")?.checked === true;
+    const novidadeAte = novidade
+        ? (document.getElementById("novidade-ate")?.value || adicionarDiasISO(15))
+        : "";
+    const esgotado = document.getElementById("esgotado")?.checked === true;
+    const sobDemanda = document.getElementById("sob-demanda")?.checked === true;
+    const prazoReposicao = document.getElementById("prazo-reposicao")?.value.trim() || "";
     const volumes = obterVolumesFormulario();
     const chaveEdicao = document.getElementById("edit-chave")?.value || "";
     const grupoAtual = chaveEdicao ? cacheGruposAdmin.get(chaveEdicao) : null;
@@ -1370,7 +1481,12 @@ async function salvarProduto() {
         imagem,
         notas,
         destaque,
-        ...(suporteCampoNovidade ? { novidade } : {})
+        ...(suporteCampoNovidade ? { novidade, novidade_ate: novidadeAte } : {}),
+        ...(suporteCamposDisponibilidade ? {
+            esgotado,
+            sob_demanda: sobDemanda,
+            prazo_reposicao: prazoReposicao
+        } : {})
     }));
 
     try {
@@ -1416,6 +1532,14 @@ function prepararEdicaoGrupo(chave) {
     document.getElementById("destaque").checked = grupo.destaque === true;
     const novidade = document.getElementById("novidade");
     if (novidade) novidade.checked = grupo.novidade === true;
+    const novidadeAte = document.getElementById("novidade-ate");
+    if (novidadeAte) novidadeAte.value = grupo.novidade_ate || (grupo.novidade ? adicionarDiasISO(15) : "");
+    const esgotado = document.getElementById("esgotado");
+    if (esgotado) esgotado.checked = grupo.esgotado === true;
+    const sobDemanda = document.getElementById("sob-demanda");
+    if (sobDemanda) sobDemanda.checked = grupo.sob_demanda === true;
+    const prazoReposicao = document.getElementById("prazo-reposicao");
+    if (prazoReposicao) prazoReposicao.value = grupo.prazo_reposicao || "";
 
     document.getElementById("titulo-form").innerText = "Editar Perfume Agrupado";
     document.getElementById("btn-salvar").innerText = "Salvar Perfume e Variações";
@@ -1445,6 +1569,14 @@ function duplicarGrupo(chave) {
     document.getElementById("destaque").checked = grupo.destaque === true;
     const novidade = document.getElementById("novidade");
     if (novidade) novidade.checked = grupo.novidade === true;
+    const novidadeAte = document.getElementById("novidade-ate");
+    if (novidadeAte) novidadeAte.value = grupo.novidade_ate || (grupo.novidade ? adicionarDiasISO(15) : "");
+    const esgotado = document.getElementById("esgotado");
+    if (esgotado) esgotado.checked = grupo.esgotado === true;
+    const sobDemanda = document.getElementById("sob-demanda");
+    if (sobDemanda) sobDemanda.checked = grupo.sob_demanda === true;
+    const prazoReposicao = document.getElementById("prazo-reposicao");
+    if (prazoReposicao) prazoReposicao.value = grupo.prazo_reposicao || "";
     document.getElementById("titulo-form").innerText = "Cadastrar Novo Perfume";
     document.getElementById("btn-salvar").innerText = "Adicionar ao Banco de Dados";
     document.getElementById("btn-cancelar").style.display = "block";
@@ -1464,6 +1596,14 @@ function cancelarEdicao() {
     if (destaque) destaque.checked = false;
     const novidade = document.getElementById("novidade");
     if (novidade) novidade.checked = false;
+    const novidadeAte = document.getElementById("novidade-ate");
+    if (novidadeAte) novidadeAte.value = "";
+    const esgotado = document.getElementById("esgotado");
+    if (esgotado) esgotado.checked = false;
+    const sobDemanda = document.getElementById("sob-demanda");
+    if (sobDemanda) sobDemanda.checked = false;
+    const prazoReposicao = document.getElementById("prazo-reposicao");
+    if (prazoReposicao) prazoReposicao.value = "";
 
     document.getElementById("titulo-form").innerText = "Cadastrar Novo Perfume";
     document.getElementById("btn-salvar").innerText = "Adicionar ao Banco de Dados";
@@ -1506,13 +1646,18 @@ function renderizarResumoAdmin(produtos, grupos) {
     if (!resumo) return;
 
     const marcas = new Set(produtos.map(p => obterMarcaProduto(p)).filter(Boolean));
-    const imagens = new Set(produtos.map(p => normalizarImagemProduto(p.imagem)).filter(Boolean));
+    const gruposLista = [...grupos.values()];
+    const vitrine = gruposLista.filter(grupo => grupo.destaque).length;
+    const novidades = gruposLista.filter(grupo => grupo.novidade).length;
+    const atencoes = gruposLista.filter(grupo => grupo.esgotado || !normalizarImagemProduto(grupo.imagem)).length;
 
     resumo.innerHTML = `
         <div><strong>${grupos.size}</strong><span>Perfumes agrupados</span></div>
         <div><strong>${produtos.length}</strong><span>Variações cadastradas</span></div>
         <div><strong>${marcas.size}</strong><span>Marcas</span></div>
-        <div><strong>${imagens.size}</strong><span>Imagens reutilizáveis</span></div>
+        <div><strong>${vitrine}</strong><span>Na vitrine</span></div>
+        <div><strong>${novidades}</strong><span>Recém chegados</span></div>
+        <div><strong>${atencoes}</strong><span>Atenções</span></div>
     `;
 }
 
@@ -1526,11 +1671,18 @@ function renderizarProdutosAdmin(produtos) {
 
     const termo = (document.getElementById("busca-admin")?.value || "").toLowerCase().trim();
     const marcaFiltro = (document.getElementById("filtro-marca-admin")?.value || "").toLowerCase().trim();
+    const statusFiltro = (document.getElementById("filtro-status-admin")?.value || "").trim();
     const grupos = [...cacheGruposAdmin.values()].filter(grupo => {
         const texto = `${grupo.nome} ${grupo.marca} ${grupo.notas}`.toLowerCase();
         const passaBusca = !termo || texto.includes(termo);
         const passaMarca = !marcaFiltro || grupo.marca.toLowerCase() === marcaFiltro;
-        return passaBusca && passaMarca;
+        const passaStatus = !statusFiltro
+            || (statusFiltro === "vitrine" && grupo.destaque)
+            || (statusFiltro === "novidade" && grupo.novidade)
+            || (statusFiltro === "esgotado" && grupo.esgotado)
+            || (statusFiltro === "demanda" && grupo.sob_demanda)
+            || (statusFiltro === "sem-imagem" && !normalizarImagemProduto(grupo.imagem));
+        return passaBusca && passaMarca && passaStatus;
     }).sort((a, b) => a.marca.localeCompare(b.marca) || a.nome.localeCompare(b.nome));
 
     if (grupos.length === 0) {
@@ -1552,8 +1704,11 @@ function renderizarProdutosAdmin(produtos) {
                 const volumes = grupo.volumes.length ? grupo.volumes.map(v => `${v}ml`).join(", ") : "Sem volume";
                 const imagem = normalizarImagemProduto(grupo.imagem);
                 const selosAdmin = [
-                    grupo.destaque ? `<span>Mais procurado</span>` : "",
-                    grupo.novidade ? `<span>Recém-chegado</span>` : ""
+                    grupo.destaque ? `<span>Vitrine</span>` : "",
+                    grupo.novidade ? `<span>Recém-chegado${grupo.novidade_ate ? ` até ${escaparHTML(grupo.novidade_ate)}` : ""}</span>` : "",
+                    grupo.esgotado ? `<span>Esgotado</span>` : "",
+                    grupo.sob_demanda ? `<span>Sob demanda</span>` : "",
+                    grupo.prazo_reposicao ? `<span>${escaparHTML(grupo.prazo_reposicao)}</span>` : ""
                 ].filter(Boolean).join("");
                 return `
                     <div class="admin-product-row">
@@ -1684,7 +1839,7 @@ async function exportarBanco(formato) {
         const data = new Date().toISOString().slice(0, 10);
 
         if (formato === "csv") {
-            const colunas = ["id", "nome", "marca", "imagem", "notas", "destaque", "created_at"];
+            const colunas = ["id", "nome", "marca", "imagem", "notas", "destaque", "novidade", "novidade_ate", "esgotado", "sob_demanda", "prazo_reposicao", "created_at"];
             const linhas = [
                 colunas.join(","),
                 ...produtos.map(produto => colunas.map(coluna => valorCSV(produto[coluna])).join(","))
@@ -1998,6 +2153,12 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("imagem")?.addEventListener("input", atualizarPreviewImagemAdmin);
     document.getElementById("nome")?.addEventListener("blur", sugerirImagemPorGrupo);
     document.getElementById("marca")?.addEventListener("change", sugerirImagemPorGrupo);
+    document.getElementById("novidade")?.addEventListener("change", event => {
+        const novidadeAte = document.getElementById("novidade-ate");
+        if (!novidadeAte) return;
+        novidadeAte.value = event.target.checked ? (novidadeAte.value || adicionarDiasISO(15)) : "";
+    });
     document.getElementById("busca-admin")?.addEventListener("input", filtrarAdmin);
     document.getElementById("filtro-marca-admin")?.addEventListener("change", filtrarAdmin);
+    document.getElementById("filtro-status-admin")?.addEventListener("change", filtrarAdmin);
 });

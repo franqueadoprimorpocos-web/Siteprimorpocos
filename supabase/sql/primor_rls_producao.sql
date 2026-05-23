@@ -16,6 +16,17 @@ alter table if exists public.marcas enable row level security;
 alter table if exists public.clientes enable row level security;
 alter table if exists public.configuracoes enable row level security;
 
+alter table if exists public.perfumes add column if not exists novidade boolean default false;
+alter table if exists public.perfumes add column if not exists novidade_ate date;
+alter table if exists public.perfumes add column if not exists esgotado boolean default false;
+alter table if exists public.perfumes add column if not exists sob_demanda boolean default false;
+alter table if exists public.perfumes add column if not exists prazo_reposicao text;
+
+update public.perfumes
+   set novidade_ate = current_date + 15
+ where novidade = true
+   and novidade_ate is null;
+
 drop policy if exists "public_select_perfumes" on public.perfumes;
 drop policy if exists "public_select_marcas" on public.marcas;
 drop policy if exists "deny_clientes_direct" on public.clientes;
@@ -176,6 +187,10 @@ $$;
 -- Funcoes de admin para migrar o painel para RLS fechado.
 -- O JS deve usar estas funcoes para inserir/editar/remover no futuro.
 
+drop function if exists public.admin_upsert_perfume(text,bigint,text,text,text,text,boolean,boolean);
+drop function if exists public.admin_upsert_perfume(text,bigint,text,text,text,text,boolean,boolean,boolean,boolean,text);
+drop function if exists public.admin_upsert_perfume(text,bigint,text,text,text,text,boolean,boolean,date,boolean,boolean,text);
+
 create or replace function public.admin_upsert_perfume(
     p_senha text,
     p_id bigint default null,
@@ -184,7 +199,11 @@ create or replace function public.admin_upsert_perfume(
     p_imagem text default '',
     p_notas text default '',
     p_destaque boolean default false,
-    p_novidade boolean default false
+    p_novidade boolean default false,
+    p_novidade_ate date default null,
+    p_esgotado boolean default false,
+    p_sob_demanda boolean default false,
+    p_prazo_reposicao text default null
 )
 returns bigint
 language plpgsql
@@ -203,14 +222,20 @@ begin
     end if;
 
     if p_id is null then
-        insert into public.perfumes (nome, marca, imagem, notas, destaque, novidade)
+        insert into public.perfumes (
+            nome, marca, imagem, notas, destaque, novidade, novidade_ate, esgotado, sob_demanda, prazo_reposicao
+        )
         values (
             trim(p_nome),
             nullif(trim(coalesce(p_marca, '')), ''),
             coalesce(p_imagem, ''),
             coalesce(p_notas, ''),
             coalesce(p_destaque, false),
-            coalesce(p_novidade, false)
+            coalesce(p_novidade, false),
+            case when coalesce(p_novidade, false) then coalesce(p_novidade_ate, current_date + 15) else null end,
+            coalesce(p_esgotado, false),
+            coalesce(p_sob_demanda, false),
+            nullif(trim(coalesce(p_prazo_reposicao, '')), '')
         )
         returning id into v_id;
     else
@@ -220,7 +245,11 @@ begin
                imagem = coalesce(p_imagem, ''),
                notas = coalesce(p_notas, ''),
                destaque = coalesce(p_destaque, false),
-               novidade = coalesce(p_novidade, false)
+               novidade = coalesce(p_novidade, false),
+               novidade_ate = case when coalesce(p_novidade, false) then coalesce(p_novidade_ate, current_date + 15) else null end,
+               esgotado = coalesce(p_esgotado, false),
+               sob_demanda = coalesce(p_sob_demanda, false),
+               prazo_reposicao = nullif(trim(coalesce(p_prazo_reposicao, '')), '')
          where id = p_id
         returning id into v_id;
     end if;
@@ -299,7 +328,7 @@ revoke all on function public.validar_admin_primor(text) from public;
 revoke all on function public.upsert_cliente_publico(text,text,text,text,date,text,uuid) from public;
 revoke all on function public.exportar_clientes_admin(text) from public;
 revoke all on function public.buscar_cliente_publico(text,text) from public;
-revoke all on function public.admin_upsert_perfume(text,bigint,text,text,text,text,boolean,boolean) from public;
+revoke all on function public.admin_upsert_perfume(text,bigint,text,text,text,text,boolean,boolean,date,boolean,boolean,text) from public;
 revoke all on function public.admin_delete_perfume(text,bigint) from public;
 revoke all on function public.admin_upsert_marca(text,bigint,text) from public;
 revoke all on function public.admin_delete_marca(text,bigint) from public;
@@ -308,7 +337,7 @@ grant execute on function public.validar_admin_primor(text) to anon, authenticat
 grant execute on function public.upsert_cliente_publico(text,text,text,text,date,text,uuid) to anon, authenticated;
 grant execute on function public.exportar_clientes_admin(text) to anon, authenticated;
 grant execute on function public.buscar_cliente_publico(text,text) to anon, authenticated;
-grant execute on function public.admin_upsert_perfume(text,bigint,text,text,text,text,boolean,boolean) to anon, authenticated;
+grant execute on function public.admin_upsert_perfume(text,bigint,text,text,text,text,boolean,boolean,date,boolean,boolean,text) to anon, authenticated;
 grant execute on function public.admin_delete_perfume(text,bigint) to anon, authenticated;
 grant execute on function public.admin_upsert_marca(text,bigint,text) to anon, authenticated;
 grant execute on function public.admin_delete_marca(text,bigint) to anon, authenticated;

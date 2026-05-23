@@ -964,27 +964,31 @@ input[type="text"]::placeholder {
 
 .card-ribbon-stack {
     position: absolute;
-    top: 12px;
-    left: 12px;
+    top: clamp(14px, 3.2vw, 22px);
+    left: clamp(14px, 3.2vw, 22px);
+    max-width: calc(100% - 44px);
     z-index: 3;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 6px;
+    gap: 7px;
     pointer-events: none;
 }
 
 .card-ribbon {
     display: inline-flex;
     align-items: center;
+    max-width: 100%;
     min-height: 24px;
-    padding: 0 10px;
+    padding: 0 11px;
     border-radius: 999px;
-    box-shadow: 0 8px 18px rgba(0,0,0,0.12);
+    box-shadow: 0 10px 20px rgba(26,18,9,0.14);
     font-size: 10px;
     font-weight: 800;
-    letter-spacing: 0.8px;
+    letter-spacing: 0.7px;
+    line-height: 1;
     text-transform: uppercase;
+    white-space: nowrap;
 }
 
 .card-ribbon-destaque {
@@ -996,6 +1000,18 @@ input[type="text"]::placeholder {
     background: #fff6e5;
     color: #9b6714;
     border: 1px solid rgba(197,160,89,0.34);
+}
+
+.card-ribbon-esgotado {
+    background: #f5e8e8;
+    color: #8e2d2d;
+    border: 1px solid rgba(142,45,45,0.2);
+}
+
+.card-ribbon-demanda {
+    background: #eef3f0;
+    color: #2f6148;
+    border: 1px solid rgba(47,97,72,0.2);
 }
 
 .image-container.sem-imagem {
@@ -1072,6 +1088,29 @@ input[type="text"]::placeholder {
 .notas-texto strong {
     color: #6f5527;
     font-style: normal;
+}
+
+.status-texto {
+    width: 100%;
+    margin: 0 0 12px;
+    padding: 9px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.35;
+    text-align: center;
+}
+
+.status-esgotado {
+    background: #fff0f0;
+    color: #8e2d2d;
+    border: 1px solid rgba(142,45,45,0.16);
+}
+
+.status-demanda {
+    background: #f0f6f2;
+    color: #2f6148;
+    border: 1px solid rgba(47,97,72,0.16);
 }
 
 .card-marca-tag {
@@ -2819,8 +2858,9 @@ input[type="text"]::placeholder {
     }
 
     .card-ribbon-stack {
-        top: 10px;
-        left: 10px;
+        top: 14px;
+        left: 14px;
+        max-width: calc(100% - 34px);
         gap: 5px;
     }
 
