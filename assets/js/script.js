@@ -14,6 +14,90 @@ if (!SUPABASE_CONFIG_OK) {
     console.error("Configuração do Supabase ausente. Gere assets/js/env.js pelo build ou configure as variáveis na Vercel.");
 }
 
+async function registrarAcessoCatalogo() {
+    if (!document.getElementById("product-list")) return;
+    if (sessionStorage.getItem("primor_acesso_registrado") === dataISOHoje()) return;
+
+    try {
+        const response = await fetch("/api/track-access", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                page: window.location.pathname || "/"
+            }),
+            keepalive: true
+        });
+
+        if (response.ok) {
+            sessionStorage.setItem("primor_acesso_registrado", dataISOHoje());
+        }
+    } catch (error) {
+        // A medicao nunca deve atrapalhar o catalogo.
+    }
+}
+
+function formatarNumeroMetrica(valor) {
+    return Number(valor || 0).toLocaleString("pt-BR");
+}
+
+function formatarDataMetrica(valor) {
+    if (!valor) return "Sem registros";
+
+    try {
+        return new Intl.DateTimeFormat("pt-BR", {
+            day: "2-digit",
+            month: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit"
+        }).format(new Date(valor));
+    } catch (error) {
+        return "Sem registros";
+    }
+}
+
+async function carregarResumoAcessosAdmin() {
+    const container = document.getElementById("admin-resumo-acessos");
+    if (!container) return;
+
+    const senhaAdmin = sessionStorage.getItem("admin_senha") || "";
+    if (!senhaAdmin) {
+        container.innerHTML = "";
+        return;
+    }
+
+    container.innerHTML = "<p>Carregando acessos do catalogo...</p>";
+
+    try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/resumo_acessos_admin`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ p_senha: senhaAdmin })
+        });
+
+        if (!response.ok) throw new Error("Resumo de acessos indisponivel.");
+
+        const dados = await response.json();
+        const resumo = Array.isArray(dados) ? dados[0] : dados;
+
+        container.innerHTML = `
+            <div class="admin-access-copy">
+                <span>Movimento do catalogo</span>
+                <strong>Visitantes unicos por dia</strong>
+                <small>Contagem por hash anonimo. Nao salvamos IP puro nem dados pessoais.</small>
+            </div>
+            <div class="admin-access-metrics">
+                <div><strong>${formatarNumeroMetrica(resumo?.hoje)}</strong><span>Hoje</span></div>
+                <div><strong>${formatarNumeroMetrica(resumo?.ultimos_7_dias)}</strong><span>7 dias</span></div>
+                <div><strong>${formatarNumeroMetrica(resumo?.ultimos_30_dias)}</strong><span>30 dias</span></div>
+                <div><strong>${formatarNumeroMetrica(resumo?.total)}</strong><span>Total</span></div>
+                <div><strong>${formatarDataMetrica(resumo?.ultima_visita)}</strong><span>Ultima visita</span></div>
+            </div>
+        `;
+    } catch (error) {
+        container.innerHTML = "<p>Rode o SQL atualizado no Supabase para ativar as metricas de acesso.</p>";
+    }
+}
+
 
 let cacheProdutos = []; // Mantém produtos em memória para filtros rápidos
 let cacheProdutosAdmin = [];
@@ -25,6 +109,8 @@ let marcaSelecionadaCatalogo = "";
 let filtroEspecialCatalogo = "";
 let suporteCampoNovidade = false;
 let suporteCamposDisponibilidade = false;
+let marcaLateralAdmin = "";
+let statusLateralAdmin = "";
 
 const supabaseClient = window.supabase?.createClient
     ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
@@ -416,6 +502,7 @@ function salvarClienteLocal(cliente) {
         if (valorLimpo !== null) dadosLimpos[chave] = valorLimpo;
     });
 
+    if (dadosLimpos.nome) dadosLimpos.nome = formatarNomeCliente(dadosLimpos.nome);
     clienteAtual = { ...clienteAtual, ...dadosLimpos };
     localStorage.setItem("cliente_primor", JSON.stringify(clienteAtual));
     atualizarBotaoLoginCliente();
@@ -1135,6 +1222,7 @@ function filtrarNovidades() {
 
 // Inicializador da Vitrine
 carregarProdutos();
+registrarAcessoCatalogo();
 
 // Busca ativa dinâmica
 const searchInput = document.getElementById("search");
@@ -1173,6 +1261,7 @@ function verificarAcesso() {
             verificarSuporteCampoNovidade();
             verificarSuporteCamposDisponibilidade();
             carregarProdutosAdmin();
+            carregarResumoAcessosAdmin();
             carregarMarcas();
         }
     }
@@ -1221,6 +1310,18 @@ function logout() {
     localStorage.removeItem("admin_logado");
     sessionStorage.removeItem("admin_senha");
     window.location.reload();
+}
+
+function trocarCategoriaAdmin(categoria) {
+    const categoriaAtiva = categoria || "visao-geral";
+
+    document.querySelectorAll(".admin-panel").forEach(painel => {
+        painel.classList.toggle("active", painel.id === `admin-panel-${categoriaAtiva}`);
+    });
+
+    document.querySelectorAll("[data-admin-tab]").forEach(botao => {
+        botao.classList.toggle("active", botao.dataset.adminTab === categoriaAtiva);
+    });
 }
 
 function obterVolumesFormulario() {
@@ -1522,6 +1623,7 @@ function prepararEdicaoGrupo(chave) {
     const grupo = cacheGruposAdmin.get(chave);
     if (!grupo) return;
 
+    trocarCategoriaAdmin("perfumes");
     document.getElementById("edit-id").value = grupo.variacoes.map(p => p.id).join(",");
     document.getElementById("edit-chave").value = grupo.chave;
     document.getElementById("nome").value = grupo.nome;
@@ -1559,6 +1661,7 @@ function duplicarGrupo(chave) {
     const grupo = cacheGruposAdmin.get(chave);
     if (!grupo) return;
 
+    trocarCategoriaAdmin("perfumes");
     document.getElementById("edit-id").value = "";
     document.getElementById("edit-chave").value = "";
     document.getElementById("nome").value = grupo.nome;
@@ -1650,6 +1753,11 @@ function renderizarResumoAdmin(produtos, grupos) {
     const vitrine = gruposLista.filter(grupo => grupo.destaque).length;
     const novidades = gruposLista.filter(grupo => grupo.novidade).length;
     const atencoes = gruposLista.filter(grupo => grupo.esgotado || !normalizarImagemProduto(grupo.imagem)).length;
+    const semImagem = gruposLista.filter(grupo => !normalizarImagemProduto(grupo.imagem)).length;
+    const esgotados = gruposLista.filter(grupo => grupo.esgotado).length;
+    const sobDemanda = gruposLista.filter(grupo => grupo.sob_demanda).length;
+    const semNotas = gruposLista.filter(grupo => !String(grupo.notas || "").trim()).length;
+    const totalVolumes = gruposLista.reduce((total, grupo) => total + grupo.volumes.length, 0);
 
     resumo.innerHTML = `
         <div><strong>${grupos.size}</strong><span>Perfumes agrupados</span></div>
@@ -1659,6 +1767,124 @@ function renderizarResumoAdmin(produtos, grupos) {
         <div><strong>${novidades}</strong><span>Recém chegados</span></div>
         <div><strong>${atencoes}</strong><span>Atenções</span></div>
     `;
+
+    const insights = document.getElementById("admin-insights");
+    if (!insights) return;
+
+    insights.innerHTML = `
+        <div>
+            <span>Organizacao</span>
+            <strong>${totalVolumes}</strong>
+            <small>Volumes cadastrados em perfumes agrupados.</small>
+        </div>
+        <div>
+            <span>Imagens</span>
+            <strong>${semImagem}</strong>
+            <small>Perfumes sem imagem para revisar depois.</small>
+        </div>
+        <div>
+            <span>Notas olfativas</span>
+            <strong>${semNotas}</strong>
+            <small>Cadastros sem notas preenchidas.</small>
+        </div>
+        <div>
+            <span>Disponibilidade</span>
+            <strong>${esgotados + sobDemanda}</strong>
+            <small>${esgotados} esgotado(s) e ${sobDemanda} sob demanda.</small>
+        </div>
+    `;
+}
+
+function renderizarCatalogoLateralAdmin() {
+    const container = document.getElementById("lista-admin-lateral");
+    if (!container || !cacheGruposAdmin?.size) return;
+
+    const termo = (document.getElementById("busca-admin-lateral")?.value || "").toLowerCase().trim();
+    const marcaFiltro = marcaLateralAdmin.toLowerCase().trim();
+    const grupos = [...cacheGruposAdmin.values()]
+        .filter(grupo => {
+            const texto = `${grupo.nome} ${grupo.marca} ${grupo.notas}`.toLowerCase();
+            const passaBusca = !termo || texto.includes(termo);
+            const passaMarca = !marcaFiltro || grupo.marca.toLowerCase() === marcaFiltro;
+            const passaStatus = grupoPassaStatusAdmin(grupo, statusLateralAdmin);
+            return passaBusca && passaMarca && passaStatus;
+        })
+        .sort((a, b) => a.marca.localeCompare(b.marca) || a.nome.localeCompare(b.nome));
+
+    if (!grupos.length) {
+        container.innerHTML = "<p>Nenhum perfume encontrado.</p>";
+        return;
+    }
+
+    const marcas = new Map();
+    grupos.forEach(grupo => {
+        if (!marcas.has(grupo.marca)) marcas.set(grupo.marca, []);
+        marcas.get(grupo.marca).push(grupo);
+    });
+
+    container.innerHTML = [...marcas.entries()].map(([marca, itens]) => `
+        <section class="admin-side-brand">
+            <h4>${escaparHTML(marca)} <span>${itens.length}</span></h4>
+            ${itens.map(grupo => {
+                const chave = escaparAtributoJS(grupo.chave);
+                const imagem = normalizarImagemProduto(grupo.imagem);
+                const volumes = grupo.volumes.length ? grupo.volumes.map(v => `${v}ml`).join(", ") : "Sem volume";
+                const status = [
+                    grupo.destaque ? "Vitrine" : "",
+                    grupo.novidade ? "Novo" : "",
+                    grupo.esgotado ? "Esgotado" : "",
+                    grupo.sob_demanda ? "Encomenda" : "",
+                    !imagem ? "Sem imagem" : ""
+                ].filter(Boolean).join(" · ");
+
+                return `
+                    <button type="button" class="admin-side-product" onclick="prepararEdicaoGrupo('${chave}')">
+                        <span class="admin-side-thumb">${imagem ? `<img src="${escaparHTML(imagem)}" alt="${escaparHTML(grupo.nome)}">` : "Sem imagem"}</span>
+                        <span class="admin-side-info">
+                            <strong>${escaparHTML(grupo.nome)}</strong>
+                            <small>${escaparHTML(volumes)}</small>
+                            ${status ? `<em>${escaparHTML(status)}</em>` : ""}
+                        </span>
+                    </button>
+                `;
+            }).join("")}
+        </section>
+    `).join("");
+}
+
+function filtrarMarcaLateralAdmin(marca) {
+    marcaLateralAdmin = String(marca || "").trim();
+
+    document.querySelectorAll("#filtro-marcas-lateral button").forEach(botao => {
+        botao.classList.toggle("active", (botao.dataset.marca || "") === marcaLateralAdmin);
+    });
+
+    renderizarCatalogoLateralAdmin();
+}
+
+function filtrarStatusLateralAdmin(status) {
+    statusLateralAdmin = String(status || "").trim();
+
+    document.querySelectorAll("#filtro-status-lateral button").forEach(botao => {
+        botao.classList.toggle("active", (botao.dataset.status || "") === statusLateralAdmin);
+    });
+
+    renderizarCatalogoLateralAdmin();
+}
+
+function grupoPassaStatusAdmin(grupo, statusFiltro) {
+    if (!statusFiltro) return true;
+
+    const temImagem = Boolean(normalizarImagemProduto(grupo.imagem));
+    const temNotas = Boolean(String(grupo.notas || "").trim());
+
+    return (statusFiltro === "disponivel" && !grupo.esgotado && !grupo.sob_demanda)
+        || (statusFiltro === "vitrine" && grupo.destaque)
+        || (statusFiltro === "novidade" && grupo.novidade)
+        || (statusFiltro === "esgotado" && grupo.esgotado)
+        || (statusFiltro === "demanda" && grupo.sob_demanda)
+        || (statusFiltro === "sem-imagem" && !temImagem)
+        || (statusFiltro === "sem-notas" && !temNotas);
 }
 
 function renderizarProdutosAdmin(produtos) {
@@ -1667,6 +1893,7 @@ function renderizarProdutosAdmin(produtos) {
 
     cacheGruposAdmin = agruparProdutosAdmin(produtos);
     renderizarResumoAdmin(produtos, cacheGruposAdmin);
+    renderizarCatalogoLateralAdmin();
     sincronizarListaImagensAdmin(produtos);
 
     const termo = (document.getElementById("busca-admin")?.value || "").toLowerCase().trim();
@@ -1676,12 +1903,7 @@ function renderizarProdutosAdmin(produtos) {
         const texto = `${grupo.nome} ${grupo.marca} ${grupo.notas}`.toLowerCase();
         const passaBusca = !termo || texto.includes(termo);
         const passaMarca = !marcaFiltro || grupo.marca.toLowerCase() === marcaFiltro;
-        const passaStatus = !statusFiltro
-            || (statusFiltro === "vitrine" && grupo.destaque)
-            || (statusFiltro === "novidade" && grupo.novidade)
-            || (statusFiltro === "esgotado" && grupo.esgotado)
-            || (statusFiltro === "demanda" && grupo.sob_demanda)
-            || (statusFiltro === "sem-imagem" && !normalizarImagemProduto(grupo.imagem));
+        const passaStatus = grupoPassaStatusAdmin(grupo, statusFiltro);
         return passaBusca && passaMarca && passaStatus;
     }).sort((a, b) => a.marca.localeCompare(b.marca) || a.nome.localeCompare(b.nome));
 
@@ -1776,6 +1998,18 @@ function valorCSV(valor) {
     return `"${String(valor ?? "").replace(/"/g, '""')}"`;
 }
 
+function escaparHTMLPlanilha(valor) {
+    return String(valor ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+}
+
+function valorBooleanoExportacao(valor) {
+    return valor === true || valor === "true" ? "Sim" : "Não";
+}
+
 function valorTextoExcel(valor) {
     const texto = String(valor ?? "").trim();
     return texto ? `="${texto.replace(/"/g, '""')}"` : "";
@@ -1818,12 +2052,117 @@ function formatarOrigemCliente(valor) {
 function valorClienteExportacao(cliente, coluna) {
     const valor = cliente[coluna.campo];
 
-    if (coluna.tipo === "texto") return valorTextoExcel(valor);
+    if (coluna.tipo === "nome") return formatarNomeCliente(valor);
+    if (coluna.tipo === "texto") return String(valor ?? "").trim();
     if (coluna.tipo === "data") return formatarDataBR(valor);
     if (coluna.tipo === "datahora") return formatarDataHoraBR(valor);
     if (coluna.tipo === "origem") return formatarOrigemCliente(valor);
 
     return valor ?? "";
+}
+
+function valorPerfumeExportacao(produto, coluna) {
+    const valor = produto[coluna.campo];
+
+    if (coluna.tipo === "texto") return String(valor ?? "").trim();
+    if (coluna.tipo === "booleano") return valorBooleanoExportacao(valor);
+    if (coluna.tipo === "data") return formatarDataBR(valor);
+    if (coluna.tipo === "datahora") return formatarDataHoraBR(valor);
+
+    return valor ?? "";
+}
+
+function montarPlanilhaHTML({ titulo, subtitulo, colunas, linhas }) {
+    const data = formatarDataHoraBR(new Date().toISOString());
+    const cabecalho = colunas.map(coluna => `<th>${escaparHTMLPlanilha(coluna.titulo)}</th>`).join("");
+    const corpo = linhas.map(linha => `
+        <tr>
+            ${colunas.map(coluna => {
+                const valor = linha[coluna.campo];
+                const classeStatus = coluna.classe === "status"
+                    ? (valor === "Sim" ? " status-sim" : " status-nao")
+                    : "";
+                const classe = coluna.classe || classeStatus
+                    ? ` class="${[coluna.classe, classeStatus.trim()].filter(Boolean).join(" ")}"`
+                    : "";
+                return `<td${classe}>${escaparHTMLPlanilha(valor)}</td>`;
+            }).join("")}
+        </tr>
+    `).join("");
+
+    return `<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: Aptos, Calibri, Arial, sans-serif; color: #1f1f1f; }
+        .title { background: #111111; color: #f7d887; font-family: Georgia, 'Times New Roman', serif; font-size: 26px; font-weight: 800; }
+        .subtitle { background: #241c12; color: #f4ead6; font-size: 14px; }
+        table { border-collapse: collapse; width: 100%; }
+        th { background: #c5a059; color: #111111; font-size: 14px; font-weight: 800; text-align: left; border: 1px solid #9f7b31; padding: 10px; }
+        td { border: 1px solid #ddd2bd; padding: 9px; font-size: 13px; vertical-align: top; mso-number-format:"\\@"; }
+        tr:nth-child(even) td { background: #fff8ec; }
+        .id { text-align: center; background: #f4ead6; font-weight: 700; }
+        .status-sim { color: #1f6f3d; font-weight: 700; }
+        .status-nao { color: #8a8a8a; }
+        .link, .long-text { width: 380px; white-space: normal; }
+        .date { width: 130px; }
+        .phone { width: 150px; }
+    </style>
+</head>
+<body>
+    <table>
+        <tr><td class="title" colspan="${colunas.length}">${escaparHTMLPlanilha(titulo)}</td></tr>
+        <tr><td class="subtitle" colspan="${colunas.length}">${escaparHTMLPlanilha(subtitulo)} | Gerado em ${escaparHTMLPlanilha(data)}</td></tr>
+        <tr>${cabecalho}</tr>
+        ${corpo}
+    </table>
+</body>
+</html>`;
+}
+
+function montarRelatorioGerencialHTML({ secoes }) {
+    const data = formatarDataHoraBR(new Date().toISOString());
+    const tabelas = secoes.map(secao => {
+        const cabecalho = secao.colunas.map(coluna => `<th>${escaparHTMLPlanilha(coluna.titulo)}</th>`).join("");
+        const linhas = secao.linhas.map(linha => `
+            <tr>
+                ${secao.colunas.map(coluna => `<td>${escaparHTMLPlanilha(linha[coluna.campo])}</td>`).join("")}
+            </tr>
+        `).join("");
+
+        return `
+            <tr><td class="section" colspan="${secao.colunas.length}">${escaparHTMLPlanilha(secao.titulo)}</td></tr>
+            <tr>${cabecalho}</tr>
+            ${linhas || `<tr><td colspan="${secao.colunas.length}">Sem dados para esta seção.</td></tr>`}
+            <tr><td class="gap" colspan="${secao.colunas.length}"></td></tr>
+        `;
+    }).join("");
+
+    return `<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: Aptos, Calibri, Arial, sans-serif; color: #1f1f1f; }
+        table { border-collapse: collapse; width: 100%; }
+        .title { background: #111111; color: #f7d887; font-family: Georgia, 'Times New Roman', serif; font-size: 28px; font-weight: 800; }
+        .subtitle { background: #241c12; color: #f4ead6; font-size: 14px; }
+        .section { background: #f4ead6; color: #6f5527; font-size: 18px; font-weight: 800; border: 1px solid #d8c49a; padding: 10px; }
+        th { background: #c5a059; color: #111111; font-size: 14px; font-weight: 800; text-align: left; border: 1px solid #9f7b31; padding: 10px; }
+        td { border: 1px solid #ddd2bd; padding: 9px; font-size: 13px; vertical-align: top; mso-number-format:"\\@"; }
+        tr:nth-child(even) td { background: #fffaf2; }
+        .gap { height: 18px; background: #ffffff; border: 0; }
+    </style>
+</head>
+<body>
+    <table>
+        <tr><td class="title" colspan="4">Primor Poços - Relatório Gerencial</td></tr>
+        <tr><td class="subtitle" colspan="4">Resumo estratégico do catálogo | Gerado em ${escaparHTMLPlanilha(data)}</td></tr>
+        ${tabelas}
+    </table>
+</body>
+</html>`;
 }
 
 async function exportarBanco(formato) {
@@ -1838,13 +2177,35 @@ async function exportarBanco(formato) {
         const produtos = await response.json();
         const data = new Date().toISOString().slice(0, 10);
 
-        if (formato === "csv") {
-            const colunas = ["id", "nome", "marca", "imagem", "notas", "destaque", "novidade", "novidade_ate", "esgotado", "sob_demanda", "prazo_reposicao", "created_at"];
-            const linhas = [
-                colunas.join(","),
-                ...produtos.map(produto => colunas.map(coluna => valorCSV(produto[coluna])).join(","))
+        if (formato === "xls") {
+            const colunas = [
+                { campo: "id", titulo: "ID", classe: "id" },
+                { campo: "nome", titulo: "Perfume" },
+                { campo: "marca", titulo: "Marca" },
+                { campo: "notas", titulo: "Notas olfativas", classe: "long-text" },
+                { campo: "imagem", titulo: "Imagem", tipo: "texto", classe: "link" },
+                { campo: "destaque", titulo: "Na vitrine", tipo: "booleano", classe: "status" },
+                { campo: "novidade", titulo: "Recém-chegado", tipo: "booleano", classe: "status" },
+                { campo: "novidade_ate", titulo: "Recém-chegado até", tipo: "data", classe: "date" },
+                { campo: "esgotado", titulo: "Esgotado", tipo: "booleano", classe: "status" },
+                { campo: "sob_demanda", titulo: "Sob demanda / encomenda", tipo: "booleano", classe: "status" },
+                { campo: "prazo_reposicao", titulo: "Prazo de reposição" },
+                { campo: "created_at", titulo: "Cadastrado em", tipo: "datahora", classe: "date" }
             ];
-            baixarArquivo(`primor-perfumes-${data}.csv`, linhas.join("\n"), "text/csv;charset=utf-8");
+            const linhas = produtos.map(produto => {
+                const linha = {};
+                colunas.forEach(coluna => {
+                    linha[coluna.campo] = valorPerfumeExportacao(produto, coluna);
+                });
+                return linha;
+            });
+            const html = montarPlanilhaHTML({
+                titulo: "Primor Poços - Catálogo de Perfumes",
+                subtitulo: "Planilha operacional para conferência de perfumes, imagens, notas e disponibilidade",
+                colunas,
+                linhas
+            });
+            baixarArquivo(`primor-catalogo-${data}.xls`, `\ufeff${html}`, "application/vnd.ms-excel;charset=utf-8");
             return;
         }
 
@@ -1859,7 +2220,7 @@ async function exportarBanco(formato) {
     }
 }
 
-async function exportarClientesCSV() {
+async function exportarClientesPlanilha() {
     const senhaAdmin = sessionStorage.getItem("admin_senha");
 
     if (!senhaAdmin) {
@@ -1880,26 +2241,163 @@ async function exportarClientesCSV() {
 
         const data = new Date().toISOString().slice(0, 10);
         const colunas = [
-            { campo: "id", titulo: "ID" },
-            { campo: "nome", titulo: "Nome completo" },
+            { campo: "id", titulo: "ID", classe: "id" },
+            { campo: "nome", titulo: "Nome completo", tipo: "nome" },
             { campo: "email", titulo: "E-mail" },
-            { campo: "telefone", titulo: "Telefone", tipo: "texto" },
-            { campo: "cpf", titulo: "CPF", tipo: "texto" },
-            { campo: "data_nascimento", titulo: "Nascimento", tipo: "data" },
+            { campo: "telefone", titulo: "Telefone", tipo: "texto", classe: "phone" },
+            { campo: "cpf", titulo: "CPF", tipo: "texto", classe: "phone" },
+            { campo: "data_nascimento", titulo: "Nascimento", tipo: "data", classe: "date" },
             { campo: "origem", titulo: "Origem", tipo: "origem" },
-            { campo: "created_at", titulo: "Criado em", tipo: "datahora" },
-            { campo: "updated_at", titulo: "Atualizado em", tipo: "datahora" }
+            { campo: "created_at", titulo: "Criado em", tipo: "datahora", classe: "date" },
+            { campo: "updated_at", titulo: "Atualizado em", tipo: "datahora", classe: "date" }
         ];
-        const linhas = [
-            "sep=;",
-            colunas.map(coluna => valorCSV(coluna.titulo)).join(";"),
-            ...clientes.map(cliente => colunas.map(coluna => valorCSV(valorClienteExportacao(cliente, coluna))).join(";"))
-        ];
+        const linhas = clientes.map(cliente => {
+            const linha = {};
+            colunas.forEach(coluna => {
+                linha[coluna.campo] = valorClienteExportacao(cliente, coluna);
+            });
+            return linha;
+        });
+        const html = montarPlanilhaHTML({
+            titulo: "Primor Poços - Clientes",
+            subtitulo: "Planilha operacional para atendimento, cadastro externo e acompanhamento de clientes",
+            colunas,
+            linhas
+        });
 
-        baixarArquivo(`primor-clientes-${data}.csv`, `\ufeff${linhas.join("\n")}`, "text/csv;charset=utf-8");
+        baixarArquivo(`primor-clientes-${data}.xls`, `\ufeff${html}`, "application/vnd.ms-excel;charset=utf-8");
     } catch (error) {
         console.error(error);
         alert("Não foi possível exportar clientes. Confira se o SQL supabase/sql/primor_rls_producao.sql foi aplicado no Supabase.");
+    }
+}
+
+async function exportarClientesCSV() {
+    return exportarClientesPlanilha();
+}
+
+async function exportarRelatorioGerencial() {
+    try {
+        const produtos = cacheProdutosAdmin.length ? cacheProdutosAdmin : cacheProdutos;
+        const grupos = [...agruparProdutosAdmin(produtos).values()];
+        const data = new Date().toISOString().slice(0, 10);
+
+        const marcas = new Map();
+        grupos.forEach(grupo => {
+            if (!marcas.has(grupo.marca)) {
+                marcas.set(grupo.marca, {
+                    marca: grupo.marca,
+                    perfumes: 0,
+                    variacoes: 0,
+                    vitrine: 0,
+                    novidades: 0,
+                    esgotados: 0,
+                    encomenda: 0,
+                    semImagem: 0,
+                    semNotas: 0
+                });
+            }
+
+            const resumo = marcas.get(grupo.marca);
+            resumo.perfumes += 1;
+            resumo.variacoes += grupo.variacoes.length;
+            resumo.vitrine += grupo.destaque ? 1 : 0;
+            resumo.novidades += grupo.novidade ? 1 : 0;
+            resumo.esgotados += grupo.esgotado ? 1 : 0;
+            resumo.encomenda += grupo.sob_demanda ? 1 : 0;
+            resumo.semImagem += normalizarImagemProduto(grupo.imagem) ? 0 : 1;
+            resumo.semNotas += String(grupo.notas || "").trim() ? 0 : 1;
+        });
+
+        const totalVitrine = grupos.filter(grupo => grupo.destaque).length;
+        const totalNovidades = grupos.filter(grupo => grupo.novidade).length;
+        const totalEsgotados = grupos.filter(grupo => grupo.esgotado).length;
+        const totalEncomenda = grupos.filter(grupo => grupo.sob_demanda).length;
+        const totalSemImagem = grupos.filter(grupo => !normalizarImagemProduto(grupo.imagem)).length;
+        const totalSemNotas = grupos.filter(grupo => !String(grupo.notas || "").trim()).length;
+
+        const pendencias = grupos
+            .filter(grupo => !normalizarImagemProduto(grupo.imagem) || !String(grupo.notas || "").trim() || grupo.esgotado || grupo.sob_demanda)
+            .map(grupo => ({
+                perfume: grupo.nome,
+                marca: grupo.marca,
+                volumes: grupo.volumes.length ? grupo.volumes.map(v => `${v}ml`).join(", ") : "Sem volume",
+                revisar: [
+                    !normalizarImagemProduto(grupo.imagem) ? "Sem imagem" : "",
+                    !String(grupo.notas || "").trim() ? "Sem notas" : "",
+                    grupo.esgotado ? "Esgotado" : "",
+                    grupo.sob_demanda ? "Sob demanda" : ""
+                ].filter(Boolean).join(", ")
+            }));
+
+        const secoes = [
+            {
+                titulo: "Visão geral",
+                colunas: [
+                    { campo: "indicador", titulo: "Indicador" },
+                    { campo: "valor", titulo: "Valor" },
+                    { campo: "leitura", titulo: "Leitura rápida" }
+                ],
+                linhas: [
+                    { indicador: "Perfumes agrupados", valor: grupos.length, leitura: "Quantidade de perfumes únicos, sem repetir volumes." },
+                    { indicador: "Variações cadastradas", valor: produtos.length, leitura: "Total de itens no banco, incluindo diferentes ml." },
+                    { indicador: "Marcas ativas", valor: marcas.size, leitura: "Marcas presentes no catálogo." },
+                    { indicador: "Itens para revisar", valor: totalSemImagem + totalSemNotas + totalEsgotados + totalEncomenda, leitura: "Soma de alertas operacionais do catálogo." }
+                ]
+            },
+            {
+                titulo: "Status do catálogo",
+                colunas: [
+                    { campo: "status", titulo: "Status" },
+                    { campo: "quantidade", titulo: "Quantidade" },
+                    { campo: "observacao", titulo: "Observação" }
+                ],
+                linhas: [
+                    { status: "Na vitrine", quantidade: totalVitrine, observacao: "Produtos destacados na home e catálogo." },
+                    { status: "Recém-chegados", quantidade: totalNovidades, observacao: "Produtos marcados como novidade dentro do prazo." },
+                    { status: "Esgotados", quantidade: totalEsgotados, observacao: "Produtos sem disponibilidade imediata." },
+                    { status: "Sob demanda / encomenda", quantidade: totalEncomenda, observacao: "Produtos que dependem de prazo ou pedido." },
+                    { status: "Sem imagem", quantidade: totalSemImagem, observacao: "Produtos que precisam de imagem." },
+                    { status: "Sem notas", quantidade: totalSemNotas, observacao: "Produtos que precisam de notas olfativas." }
+                ]
+            },
+            {
+                titulo: "Resumo por marca",
+                colunas: [
+                    { campo: "marca", titulo: "Marca" },
+                    { campo: "perfumes", titulo: "Perfumes" },
+                    { campo: "variacoes", titulo: "Variações" },
+                    { campo: "alertas", titulo: "Alertas" }
+                ],
+                linhas: [...marcas.values()]
+                    .sort((a, b) => compararTextoPtBr(a.marca, b.marca))
+                    .map(item => ({
+                        marca: item.marca,
+                        perfumes: item.perfumes,
+                        variacoes: item.variacoes,
+                        alertas: `${item.semImagem} sem imagem, ${item.semNotas} sem notas, ${item.esgotados} esgotado(s), ${item.encomenda} sob demanda`
+                    }))
+            },
+            {
+                titulo: "Pendências prioritárias",
+                colunas: [
+                    { campo: "perfume", titulo: "Perfume" },
+                    { campo: "marca", titulo: "Marca" },
+                    { campo: "volumes", titulo: "Volumes" },
+                    { campo: "revisar", titulo: "Revisar" }
+                ],
+                linhas: pendencias
+            }
+        ];
+
+        baixarArquivo(
+            `primor-relatorio-gerencial-${data}.xls`,
+            `\ufeff${montarRelatorioGerencialHTML({ secoes })}`,
+            "application/vnd.ms-excel;charset=utf-8"
+        );
+    } catch (error) {
+        console.error(error);
+        alert("Não foi possível gerar o relatório gerencial agora.");
     }
 }
 
@@ -1932,6 +2430,19 @@ async function carregarMarcas() {
             const valorAtual = filtroMarcaAdmin.value;
             filtroMarcaAdmin.innerHTML = `<option value="">Todas as marcas</option>${optionsMarcas}`;
             if (valorAtual) filtroMarcaAdmin.value = valorAtual;
+        }
+
+        const filtroMarcasLateral = document.getElementById("filtro-marcas-lateral");
+        if (filtroMarcasLateral) {
+            const valorAtual = marcaLateralAdmin;
+            filtroMarcasLateral.innerHTML = `<button type="button" class="active" data-marca="" onclick="filtrarMarcaLateralAdmin('')">Todas</button>`;
+            marcas.forEach(m => {
+                const nomeMarca = escaparHTML(m.nome);
+                const marcaJS = escaparAtributoJS(m.nome);
+                filtroMarcasLateral.innerHTML += `<button type="button" data-marca="${nomeMarca}" onclick="filtrarMarcaLateralAdmin('${marcaJS}')">${nomeMarca}</button>`;
+            });
+            marcaLateralAdmin = marcas.some(m => m.nome === valorAtual) ? valorAtual : "";
+            filtrarMarcaLateralAdmin(marcaLateralAdmin);
         }
 
         // Dropdown de Marcas na Vitrine
@@ -2161,4 +2672,5 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("busca-admin")?.addEventListener("input", filtrarAdmin);
     document.getElementById("filtro-marca-admin")?.addEventListener("change", filtrarAdmin);
     document.getElementById("filtro-status-admin")?.addEventListener("change", filtrarAdmin);
+    document.getElementById("busca-admin-lateral")?.addEventListener("input", renderizarCatalogoLateralAdmin);
 });

@@ -15,6 +15,16 @@ alter table if exists public.perfumes enable row level security;
 alter table if exists public.marcas enable row level security;
 alter table if exists public.clientes enable row level security;
 alter table if exists public.configuracoes enable row level security;
+create table if not exists public.acessos_catalogo (
+    id bigserial primary key,
+    visitante_hash text not null,
+    pagina text,
+    user_agent_hash text,
+    data_acesso date not null default current_date,
+    created_at timestamptz not null default now(),
+    constraint acessos_catalogo_visitante_dia_unique unique (visitante_hash, data_acesso)
+);
+alter table if exists public.acessos_catalogo enable row level security;
 
 alter table if exists public.perfumes add column if not exists novidade boolean default false;
 alter table if exists public.perfumes add column if not exists novidade_ate date;
@@ -27,10 +37,31 @@ update public.perfumes
  where novidade = true
    and novidade_ate is null;
 
+update public.clientes c
+   set nome = nomes.nome_formatado,
+       updated_at = now()
+  from (
+      select id,
+             string_agg(
+                 case
+                     when lower(parte) in ('de', 'da', 'das', 'do', 'dos', 'e') then lower(parte)
+                     else initcap(lower(parte))
+                 end,
+                 ' '
+             ) as nome_formatado
+        from public.clientes,
+             regexp_split_to_table(regexp_replace(trim(nome), '\s+', ' ', 'g'), ' ') as parte
+       where nullif(trim(nome), '') is not null
+       group by id
+  ) nomes
+ where c.id = nomes.id
+   and c.nome is distinct from nomes.nome_formatado;
+
 drop policy if exists "public_select_perfumes" on public.perfumes;
 drop policy if exists "public_select_marcas" on public.marcas;
 drop policy if exists "deny_clientes_direct" on public.clientes;
 drop policy if exists "deny_configuracoes_direct" on public.configuracoes;
+drop policy if exists "deny_acessos_catalogo_direct" on public.acessos_catalogo;
 
 create policy "public_select_perfumes"
 on public.perfumes
@@ -46,6 +77,7 @@ using (true);
 
 -- Nao criamos policy de select/insert/update/delete para clientes/configuracoes.
 -- O acesso acontece pelas funcoes SECURITY DEFINER abaixo.
+-- A tabela de acessos tambem fica fechada; somente RPCs agregadas podem tocar nela.
 
 create or replace function public.validar_admin_primor(p_senha text)
 returns boolean
@@ -82,6 +114,18 @@ declare
     v_telefone text := nullif(regexp_replace(coalesce(p_telefone, ''), '\D', '', 'g'), '');
     v_cpf text := nullif(regexp_replace(coalesce(p_cpf, ''), '\D', '', 'g'), '');
 begin
+    if v_nome is not null then
+        select string_agg(
+                   case
+                       when lower(parte) in ('de', 'da', 'das', 'do', 'dos', 'e') then lower(parte)
+                       else initcap(lower(parte))
+                   end,
+                   ' '
+               )
+          into v_nome
+          from regexp_split_to_table(regexp_replace(v_nome, '\s+', ' ', 'g'), ' ') as parte;
+    end if;
+
     if v_nome is null and v_email is null and v_telefone is null then
         raise exception 'Informe nome, email ou telefone.';
     end if;
@@ -182,6 +226,63 @@ as $$
             and c.telefone = nullif(regexp_replace(coalesce(p_telefone, ''), '\D', '', 'g'), ''))
      order by c.updated_at desc
      limit 1;
+$$;
+
+create or replace function public.registrar_acesso_catalogo(
+    p_visitante_hash text,
+    p_pagina text default null,
+    p_user_agent_hash text default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+    if nullif(trim(coalesce(p_visitante_hash, '')), '') is null then
+        return;
+    end if;
+
+    insert into public.acessos_catalogo (
+        visitante_hash, pagina, user_agent_hash, data_acesso, created_at
+    )
+    values (
+        trim(p_visitante_hash),
+        nullif(left(trim(coalesce(p_pagina, '')), 220), ''),
+        nullif(left(trim(coalesce(p_user_agent_hash, '')), 140), ''),
+        current_date,
+        now()
+    )
+    on conflict (visitante_hash, data_acesso) do nothing;
+end;
+$$;
+
+create or replace function public.resumo_acessos_admin(p_senha text)
+returns table (
+    hoje bigint,
+    ultimos_7_dias bigint,
+    ultimos_30_dias bigint,
+    total bigint,
+    ultima_visita timestamptz
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+    if not public.validar_admin_primor(p_senha) then
+        raise exception 'Nao autorizado.';
+    end if;
+
+    return query
+    select
+        count(*) filter (where data_acesso = current_date)::bigint as hoje,
+        count(*) filter (where data_acesso >= current_date - 6)::bigint as ultimos_7_dias,
+        count(*) filter (where data_acesso >= current_date - 29)::bigint as ultimos_30_dias,
+        count(*)::bigint as total,
+        max(created_at) as ultima_visita
+      from public.acessos_catalogo;
+end;
 $$;
 
 -- Funcoes de admin para migrar o painel para RLS fechado.
@@ -328,6 +429,8 @@ revoke all on function public.validar_admin_primor(text) from public;
 revoke all on function public.upsert_cliente_publico(text,text,text,text,date,text,uuid) from public;
 revoke all on function public.exportar_clientes_admin(text) from public;
 revoke all on function public.buscar_cliente_publico(text,text) from public;
+revoke all on function public.registrar_acesso_catalogo(text,text,text) from public;
+revoke all on function public.resumo_acessos_admin(text) from public;
 revoke all on function public.admin_upsert_perfume(text,bigint,text,text,text,text,boolean,boolean,date,boolean,boolean,text) from public;
 revoke all on function public.admin_delete_perfume(text,bigint) from public;
 revoke all on function public.admin_upsert_marca(text,bigint,text) from public;
@@ -337,6 +440,8 @@ grant execute on function public.validar_admin_primor(text) to anon, authenticat
 grant execute on function public.upsert_cliente_publico(text,text,text,text,date,text,uuid) to anon, authenticated;
 grant execute on function public.exportar_clientes_admin(text) to anon, authenticated;
 grant execute on function public.buscar_cliente_publico(text,text) to anon, authenticated;
+grant execute on function public.registrar_acesso_catalogo(text,text,text) to anon, authenticated;
+grant execute on function public.resumo_acessos_admin(text) to anon, authenticated;
 grant execute on function public.admin_upsert_perfume(text,bigint,text,text,text,text,boolean,boolean,date,boolean,boolean,text) to anon, authenticated;
 grant execute on function public.admin_delete_perfume(text,bigint) to anon, authenticated;
 grant execute on function public.admin_upsert_marca(text,bigint,text) to anon, authenticated;

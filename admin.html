@@ -42,9 +42,9 @@
                     <p>Cadastre perfumes, organize marcas, acompanhe novidades e mantenha a vitrine pronta para atendimento.</p>
                 </div>
                 <div class="admin-quick-links">
-                    <a href="#cadastro-produto">Cadastrar perfume</a>
-                    <a href="#marcas-admin">Marcas</a>
-                    <a href="#catalogo-admin">Catalogo ativo</a>
+                    <a href="#admin-panel-perfumes" onclick="trocarCategoriaAdmin('perfumes')">Cadastrar perfume</a>
+                    <a href="#admin-panel-marcas" onclick="trocarCategoriaAdmin('marcas')">Marcas</a>
+                    <a href="#admin-panel-catalogo" onclick="trocarCategoriaAdmin('catalogo')">Catalogo ativo</a>
                     <button class="btn btn-logout" onclick="logout()">Sair</button>
                 </div>
             </div>
@@ -52,12 +52,48 @@
             <input type="hidden" id="edit-id">
             <input type="hidden" id="edit-chave">
 
-            <div id="admin-resumo" class="admin-summary-grid" aria-live="polite"></div>
+            <div class="admin-tabs" role="tablist" aria-label="Categorias do painel">
+                <button type="button" class="active" data-admin-tab="visao-geral" onclick="trocarCategoriaAdmin('visao-geral')">Visao geral</button>
+                <button type="button" data-admin-tab="perfumes" onclick="trocarCategoriaAdmin('perfumes')">Perfumes</button>
+                <button type="button" data-admin-tab="marcas" onclick="trocarCategoriaAdmin('marcas')">Marcas</button>
+                <button type="button" data-admin-tab="catalogo" onclick="trocarCategoriaAdmin('catalogo')">Catalogo</button>
+            </div>
 
-            <div class="admin-columns-grid" id="cadastro-produto">
+            <section class="admin-panel active" id="admin-panel-visao-geral">
+                <div id="admin-resumo-acessos" class="admin-access-panel" aria-live="polite"></div>
+                <div id="admin-resumo" class="admin-summary-grid" aria-live="polite"></div>
+                <div id="admin-insights" class="admin-insights-grid" aria-live="polite"></div>
+                <div class="admin-export-panel">
+                    <div class="admin-card-heading">
+                        <span>Relatorios e backup</span>
+                        <h3>Exportacoes do sistema</h3>
+                    </div>
+                    <div class="admin-actions-flex admin-export-actions">
+                        <button class="btn admin-export-btn admin-export-backup" type="button" onclick="exportarBanco('json')">
+                            <span>Backup completo</span>
+                            <small>JSON com todos os dados brutos dos perfumes</small>
+                        </button>
+                        <button class="btn admin-export-btn admin-export-catalog" type="button" onclick="exportarBanco('xls')">
+                            <span>Planilha do catalogo</span>
+                            <small>Excel estilizado para conferir perfumes e status</small>
+                        </button>
+                        <button class="btn admin-export-btn admin-export-clients" type="button" onclick="exportarClientesPlanilha()">
+                            <span>Planilha de clientes</span>
+                            <small>Excel estilizado para atendimento e cadastro externo</small>
+                        </button>
+                        <button class="btn admin-export-btn admin-export-report" type="button" onclick="exportarRelatorioGerencial()">
+                            <span>Relatorio gerencial</span>
+                            <small>Resumo por marca, status e pendencias do catalogo</small>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="admin-panel" id="admin-panel-perfumes">
+            <div class="admin-columns-grid admin-product-layout" id="cadastro-produto">
                 
                 <div>
-                    <div class="form-group">
+                    <div class="form-group admin-compact-form">
                         <div class="admin-card-heading">
                             <span>Cadastro inteligente</span>
                             <h2 id="titulo-form">Cadastrar Novo Perfume</h2>
@@ -121,6 +157,38 @@
                     </div>
                 </div>
 
+                <aside class="admin-product-side-list">
+                    <div class="admin-card-heading">
+                        <span>Referencia rapida</span>
+                        <h3>Catalogo Rapido</h3>
+                    </div>
+                    <div class="admin-side-search">
+                        <input type="text" id="busca-admin-lateral" placeholder="Buscar para editar rapido...">
+                        <span class="admin-filter-label">Marcas</span>
+                        <div id="filtro-marcas-lateral" class="admin-side-brand-filter">
+                            <button type="button" class="active" data-marca="" onclick="filtrarMarcaLateralAdmin('')">Todas</button>
+                        </div>
+                        <span class="admin-filter-label">Status</span>
+                        <div id="filtro-status-lateral" class="admin-side-status-filter">
+                            <button type="button" class="active" data-status="" onclick="filtrarStatusLateralAdmin('')">Todos</button>
+                            <button type="button" data-status="disponivel" onclick="filtrarStatusLateralAdmin('disponivel')">Disponiveis</button>
+                            <button type="button" data-status="vitrine" onclick="filtrarStatusLateralAdmin('vitrine')">Vitrine</button>
+                            <button type="button" data-status="novidade" onclick="filtrarStatusLateralAdmin('novidade')">Recem chegados</button>
+                            <button type="button" data-status="esgotado" onclick="filtrarStatusLateralAdmin('esgotado')">Esgotados</button>
+                            <button type="button" data-status="demanda" onclick="filtrarStatusLateralAdmin('demanda')">Sob demanda</button>
+                            <button type="button" data-status="sem-imagem" onclick="filtrarStatusLateralAdmin('sem-imagem')">Sem imagem</button>
+                            <button type="button" data-status="sem-notas" onclick="filtrarStatusLateralAdmin('sem-notas')">Sem notas</button>
+                        </div>
+                    </div>
+                    <div id="lista-admin-lateral" class="admin-side-results">
+                        <p>Carregando perfumes...</p>
+                    </div>
+                </aside>
+
+            </div>
+            </section>
+
+            <section class="admin-panel" id="admin-panel-marcas">
                 <div class="admin-side-panel" id="marcas-admin">
                     <div class="admin-card-heading">
                         <span>Organizacao</span>
@@ -142,38 +210,47 @@
                     </div>
                 </div>
 
-            </div>
+            </section>
 
+            <section class="admin-panel" id="admin-panel-catalogo">
             <div class="admin-section-header mt-40" id="catalogo-admin">
                 <div>
                     <span>Operacao diaria</span>
                     <h3>Gerenciar Catalogo Ativo</h3>
                 </div>
+
             </div>
             <div class="admin-toolbar">
-                <input type="text" id="busca-admin" placeholder="Buscar por perfume, marca ou notas...">
-                <select id="filtro-marca-admin">
-                    <option value="">Todas as marcas</option>
-                </select>
-                <select id="filtro-status-admin">
-                    <option value="">Todos os status</option>
-                    <option value="vitrine">Vitrine</option>
-                    <option value="novidade">Recem chegados</option>
-                    <option value="esgotado">Esgotados</option>
-                    <option value="demanda">Sob demanda</option>
-                    <option value="sem-imagem">Sem imagem</option>
-                </select>
-            </div>
-            <div class="admin-actions-flex admin-export-actions">
-                <button class="btn" type="button" onclick="exportarBanco('json')">Exportar JSON</button>
-                <button class="btn" type="button" onclick="exportarBanco('csv')">Exportar CSV</button>
-                <button class="btn" type="button" onclick="exportarClientesCSV()">Exportar Clientes CSV</button>
+                <label class="admin-filter-field admin-filter-search">
+                    <span>Buscar</span>
+                    <input type="text" id="busca-admin" placeholder="Perfume, marca ou notas...">
+                </label>
+                <label class="admin-filter-field">
+                    <span>Marca</span>
+                    <select id="filtro-marca-admin">
+                        <option value="">Todas as marcas</option>
+                    </select>
+                </label>
+                <label class="admin-filter-field">
+                    <span>Status</span>
+                    <select id="filtro-status-admin">
+                        <option value="">Todos os status</option>
+                        <option value="disponivel">Disponiveis agora</option>
+                        <option value="vitrine">Vitrine</option>
+                        <option value="novidade">Recem chegados</option>
+                        <option value="esgotado">Esgotados</option>
+                        <option value="demanda">Sob demanda / encomenda</option>
+                        <option value="sem-imagem">Sem imagem</option>
+                        <option value="sem-notas">Sem notas</option>
+                    </select>
+                </label>
             </div>
             <div class="lista-gerenciamento">
                 <div id="lista-admin">
                     <p>Carregando catálogo cadastrado...</p>
                 </div>
             </div>
+            </section>
         </div>
     </div>
 
