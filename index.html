@@ -247,35 +247,23 @@
     </section>
 
     <section id="secao-cliente" class="content-section container page-static">
-        <div class="client-login-page">
+        <div class="client-login-page client-registration-upgrade">
             <div class="client-copy">
                 <div class="client-brand-lockup">
                     <img src="https://lh3.googleusercontent.com/pw/AP1GczPfQM2bnksOdkucHZRJZo-kSqLrjW7zBi5pZECv-MmYOZSbH7myhH6qfBXTgYL_wODGz4Z-rF8r72sMgAQtJM7ZPJcc-t831YtTqqQsT-XtmxTE0q-8WmN3cg-AhSnrx5a2hC-_-H9mvfKwePlvxXQ=w98-h98-s-no-gm?authuser=0"
                         alt="Primor">
                     <div>
-                        <span>Primor</span>
+                        <span>Perfumaria Primor</span>
                         <strong>Perfil do cliente</strong>
                     </div>
                 </div>
+
                 <span class="subtitle">Cadastro Primor</span>
-                <h2>Seu espaço na Primor</h2>
+                <h2>Um atendimento que lembra de você</h2>
                 <div class="accent-line"></div>
-                <p>Um cadastro discreto para manter seu atendimento mais próximo quando você voltar.</p>
-                <div class="client-mini-menu" aria-label="Resumo do cadastro Primor">
-                    <span><strong>01</strong> Contato salvo</span>
-                    <span><strong>02</strong> Acesso fácil</span>
-                    <span><strong>03</strong> Atualização livre</span>
-                </div>
-            </div>
+                <p>Guarde seus dados uma vez e facilite consultas, encomendas e próximos atendimentos no catálogo.</p>
 
-            <div class="client-panel">
-                <div class="client-panel-header">
-                    <span>Área do cliente</span>
-                    <h3>Cadastro rápido</h3>
-                    <p>E-mail e telefone recuperam seus dados em outro dispositivo.</p>
-                </div>
-
-                <div class="client-preview-card" aria-hidden="true">
+                <div class="client-preview-card client-preview-card-feature" aria-hidden="true">
                     <div class="client-preview-avatar" id="cliente-preview-avatar">P</div>
                     <div>
                         <strong id="cliente-preview-nome">Cliente Primor</strong>
@@ -283,12 +271,28 @@
                     </div>
                 </div>
 
+                <div class="client-mini-menu" aria-label="Vantagens do cadastro Primor">
+                    <span><strong>01</strong> Recupera em outro dispositivo</span>
+                    <span><strong>02</strong> Consulta mais objetiva</span>
+                    <span><strong>03</strong> Dados atualizados quando quiser</span>
+                </div>
+            </div>
+
+            <div class="client-panel">
+                <div class="client-panel-header">
+                    <span>Área do cliente</span>
+                    <h3>Cadastro e acesso</h3>
+                    <p>Use e-mail e telefone como chave para encontrar seu perfil com segurança.</p>
+                </div>
+
                 <div class="client-auth-status" id="cliente-auth-status">Carregando cadastro...</div>
 
                 <form class="client-form" id="cliente-login-form" onsubmit="salvarClientePainel(event)">
                     <div class="client-access-title">
-                        <span>Contato principal</span>
+                        <span>Dados de acesso</span>
+                        <small>Obrigatórios para recuperar seu cadastro depois</small>
                     </div>
+
                     <div class="client-form-grid">
                         <div class="field-full field-access">
                             <label for="cliente-login-email-form">E-mail *</label>
@@ -302,12 +306,12 @@
 
                         <div>
                             <label for="cliente-login-nome">Nome completo *</label>
-                            <input type="text" id="cliente-login-nome" autocomplete="name" required>
+                            <input type="text" id="cliente-login-nome" autocomplete="name" placeholder="Seu nome completo" required>
                         </div>
 
                         <div class="field-optional">
                             <label for="cliente-login-cpf">CPF</label>
-                            <input type="text" id="cliente-login-cpf" inputmode="numeric" autocomplete="off">
+                            <input type="text" id="cliente-login-cpf" inputmode="numeric" autocomplete="off" placeholder="Opcional">
                         </div>
 
                         <div class="field-optional">
@@ -316,15 +320,20 @@
                         </div>
                     </div>
 
-                    <button class="btn btn-client-primary" id="cliente-salvar-btn" type="submit">Guardar meu perfil</button>
+                    <div class="client-action-row">
+                        <button class="btn btn-client-primary" id="cliente-salvar-btn" type="submit">Salvar ou atualizar perfil</button>
+                        <button class="btn btn-secondary" type="button" onclick="sairCliente()">Sair deste dispositivo</button>
+                    </div>
                 </form>
 
                 <div class="auth-divider"><span>Já tenho cadastro</span></div>
 
                 <div class="auth-actions">
-                    <p>Informe e-mail ou telefone acima para continuar de onde parou.</p>
+                    <div>
+                        <strong>Continuar de onde parou</strong>
+                        <p>Digite e-mail ou telefone acima e carregue seus dados salvos.</p>
+                    </div>
                     <button class="btn" id="cliente-acessar-btn" type="button" onclick="acessarCadastroCliente()">Carregar meu perfil</button>
-                    <button class="btn btn-secondary" type="button" onclick="sairCliente()">Sair deste dispositivo</button>
                 </div>
 
                 <p class="client-feedback" id="cliente-feedback"></p>

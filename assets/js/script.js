@@ -673,14 +673,16 @@ function atualizarBotaoLoginCliente() {
 
     const nome = primeiroNomeCliente();
     if (nome) {
-        botao.textContent = `Cliente: ${nome}`;
+        botao.textContent = nome;
         botao.dataset.logado = "true";
+        botao.dataset.iniciais = iniciaisCliente(nome).slice(0, 2);
         botao.title = "Abrir cadastro do cliente";
         return;
     }
 
     botao.textContent = "Cadastro";
     botao.dataset.logado = "false";
+    botao.dataset.iniciais = "";
     botao.title = "Abrir cadastro do cliente";
 }
 
@@ -1220,7 +1222,53 @@ function filtrarNovidades() {
     renderizarProdutos(cacheProdutos);
 }
 
+function configurarRolagemHorizontalSegura() {
+    const seletores = ".brand-filter-list, .catalog-brand-grid, .admin-side-brand-filter, .admin-side-status-filter";
+
+    document.addEventListener("pointerdown", event => {
+        const area = event.target.closest(seletores);
+        if (!area) return;
+
+        area.dataset.dragStartX = String(event.clientX);
+        area.dataset.dragStartY = String(event.clientY);
+        area.dataset.dragging = "false";
+        area.classList.add("is-dragging");
+    }, true);
+
+    document.addEventListener("pointermove", event => {
+        const area = event.target.closest(seletores);
+        if (!area || area.dataset.dragStartX === undefined) return;
+
+        const deltaX = Math.abs(event.clientX - Number(area.dataset.dragStartX));
+        const deltaY = Math.abs(event.clientY - Number(area.dataset.dragStartY));
+        if (deltaX > 8 && deltaX > deltaY) {
+            area.dataset.dragging = "true";
+        }
+    }, true);
+
+    document.addEventListener("pointerup", event => {
+        const area = event.target.closest(seletores);
+        if (!area) return;
+
+        window.setTimeout(() => {
+            area.classList.remove("is-dragging");
+            delete area.dataset.dragStartX;
+            delete area.dataset.dragStartY;
+        }, 0);
+    }, true);
+
+    document.addEventListener("click", event => {
+        const area = event.target.closest(seletores);
+        if (!area || area.dataset.dragging !== "true") return;
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        area.dataset.dragging = "false";
+    }, true);
+}
+
 // Inicializador da Vitrine
+configurarRolagemHorizontalSegura();
 carregarProdutos();
 registrarAcessoCatalogo();
 
