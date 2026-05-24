@@ -107,6 +107,7 @@ let marcaSelecionadaParaWhatsApp = "";
 let clienteAtual = carregarClienteLocal();
 let marcaSelecionadaCatalogo = "";
 let filtroEspecialCatalogo = "";
+let scrollMenuMobile = 0;
 let suporteCampoNovidade = false;
 let suporteCamposDisponibilidade = false;
 let marcaLateralAdmin = "";
@@ -685,6 +686,7 @@ function atualizarPreviewCliente(cliente = clienteAtual) {
 function atualizarBotaoLoginCliente() {
     const botao = document.getElementById("login-nav-button");
     const botaoSair = document.getElementById("logout-nav-button");
+    const botaoSairMobile = document.getElementById("logout-mobile-button");
     if (!botao) return;
 
     const nome = primeiroNomeCliente();
@@ -695,6 +697,7 @@ function atualizarBotaoLoginCliente() {
         botao.setAttribute("aria-label", `Abrir cadastro de ${nome}`);
         botao.title = nome;
         if (botaoSair) botaoSair.hidden = false;
+        if (botaoSairMobile) botaoSairMobile.hidden = false;
         return;
     }
 
@@ -704,6 +707,7 @@ function atualizarBotaoLoginCliente() {
     botao.setAttribute("aria-label", "Abrir cadastro");
     botao.title = "Abrir cadastro do cliente";
     if (botaoSair) botaoSair.hidden = true;
+    if (botaoSairMobile) botaoSairMobile.hidden = true;
 }
 
 function fecharMenuContaTemporariamente() {
@@ -967,6 +971,7 @@ async function sairCliente() {
     alternarEdicaoCliente(true);
     atualizarBotaoLoginCliente();
     definirFeedbackCliente("Você saiu do cadastro neste dispositivo.", "info");
+    fecharMenuMobile();
 }
 
 // ==========================================
@@ -995,11 +1000,37 @@ function mostrarSecao(secaoId) {
 }
 
 function abrirMenuMobile() {
+    scrollMenuMobile = window.scrollY || document.documentElement.scrollTop || 0;
     document.body.classList.add("menu-aberto");
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollMenuMobile}px`;
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.width = "100%";
 }
 
 function fecharMenuMobile() {
+    const estavaAberto = document.body.classList.contains("menu-aberto");
     document.body.classList.remove("menu-aberto");
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.left = "";
+    document.body.style.right = "";
+    document.body.style.width = "";
+    if (estavaAberto) window.scrollTo(0, scrollMenuMobile || 0);
+    document.querySelector(".dropdown.mobile-open")?.classList.remove("mobile-open");
+    document.querySelector(".dropbtn[aria-expanded='true']")?.setAttribute("aria-expanded", "false");
+}
+
+function alternarMenuMarcasMobile(event) {
+    if (window.innerWidth > 768) return;
+
+    event.preventDefault();
+    const dropdown = event.currentTarget.closest(".dropdown");
+    if (!dropdown) return;
+
+    const aberto = dropdown.classList.toggle("mobile-open");
+    event.currentTarget.setAttribute("aria-expanded", String(aberto));
 }
 
 function atualizarMarcaAtiva(marca) {

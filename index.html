@@ -36,13 +36,14 @@
                 <a href="#" onclick="mostrarSecao('home')">Início</a>
                 <a href="#" onclick="mostrarSecao('catalogo')">Catálogo</a>
                 <div class="dropdown">
-                    <a href="#" class="dropbtn">Marcas ▾</a>
+                    <a href="#" class="dropbtn" onclick="alternarMenuMarcasMobile(event)" aria-expanded="false">Marcas <span class="drop-caret">▾</span></a>
                     <div class="dropdown-content" id="dropdown-marcas">
                         <span style="padding: 12px 16px; color: #888; font-size: 13px;">Carregando...</span>
                     </div>
                 </div>
                 <a class="mobile-only-link" href="#" onclick="mostrarSecao('historia')">Nossa História</a>
                 <a class="mobile-only-link" href="#" onclick="mostrarSecao('contato')">Contato</a>
+                <button class="mobile-logout-action" id="logout-mobile-button" type="button" onclick="sairCliente()" hidden>Sair deste dispositivo</button>
             </div>
 
             <div class="nav-right-group">
