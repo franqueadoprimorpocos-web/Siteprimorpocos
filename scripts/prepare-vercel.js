@@ -25,7 +25,7 @@ if (fs.existsSync(output)) {
 
 fs.mkdirSync(output, { recursive: true });
 
-["index.html", "admin.html", "robots.txt", "sw.js"].forEach((file) => {
+["index.html", "admin.html", "robots.txt"].forEach((file) => {
     const source = path.join(root, file);
     if (fs.existsSync(source)) {
         copyRecursive(source, path.join(output, file));

@@ -14,14 +14,25 @@ if (!SUPABASE_CONFIG_OK) {
     console.error("Configuração do Supabase ausente. Gere assets/js/env.js pelo build ou configure as variáveis na Vercel.");
 }
 
-function registrarCacheTemporario() {
-    if (!("serviceWorker" in navigator)) return;
+function removerCacheTemporarioAntigo() {
     if (!["http:", "https:"].includes(window.location.protocol)) return;
 
     window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/sw.js").catch(() => {
-            // O cache e apenas uma melhoria de velocidade; o catalogo continua sem ele.
-        });
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.getRegistrations()
+                .then(registros => Promise.all(registros.map(registro => registro.unregister())))
+                .catch(() => {});
+        }
+
+        if ("caches" in window) {
+            caches.keys()
+                .then(chaves => Promise.all(
+                    chaves
+                        .filter(chave => chave.startsWith("primor-"))
+                        .map(chave => caches.delete(chave))
+                ))
+                .catch(() => {});
+        }
     });
 }
 
@@ -1488,7 +1499,7 @@ function configurarRolagemHorizontalSegura() {
 
 // Inicializador dos mais procurados
 configurarRolagemHorizontalSegura();
-registrarCacheTemporario();
+removerCacheTemporarioAntigo();
 carregarProdutos();
 registrarAcessoCatalogo();
 
