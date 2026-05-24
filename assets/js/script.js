@@ -512,6 +512,21 @@ function normalizarTelefone(valor) {
     return String(valor ?? "").replace(/\D/g, "");
 }
 
+function formatarTelefonePreview(valor) {
+    const telefone = normalizarTelefone(valor);
+    const local = telefone.startsWith("55") && telefone.length > 11 ? telefone.slice(2) : telefone;
+
+    if (local.length === 11) {
+        return `(${local.slice(0, 2)}) ${local.slice(2, 7)}-${local.slice(7)}`;
+    }
+
+    if (local.length === 10) {
+        return `(${local.slice(0, 2)}) ${local.slice(2, 6)}-${local.slice(6)}`;
+    }
+
+    return valor || "";
+}
+
 function normalizarCPF(valor) {
     const cpf = String(valor ?? "").replace(/\D/g, "");
     return cpf || null;
@@ -658,7 +673,7 @@ function atualizarPreviewCliente(cliente = clienteAtual) {
     };
 
     const nome = limparValorNulo(clienteTela.nome) || "Cliente Primor";
-    const detalhe = limparValorNulo(clienteTela.telefone)
+    const detalhe = formatarTelefonePreview(clienteTela.telefone)
         || limparValorNulo(clienteTela.email)
         || "Cadastro aguardando seus dados";
 

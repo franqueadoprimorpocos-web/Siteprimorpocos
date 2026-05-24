@@ -2216,6 +2216,10 @@ input[type="text"]::placeholder {
     box-shadow: none;
 }
 
+.client-preview-card > div:not(.client-preview-avatar) {
+    min-width: 0;
+}
+
 .client-preview-avatar {
     display: grid;
     place-items: center;
@@ -2246,10 +2250,13 @@ input[type="text"]::placeholder {
 
 .client-preview-card span {
     display: block;
+    overflow: hidden;
     margin-top: 4px;
     color: #ddcfb8;
     font-size: 12px;
     line-height: 1.4;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .client-form {
@@ -5165,11 +5172,12 @@ input[type="text"]#search:focus {
 .client-registration-focus {
     max-width: 1060px;
     grid-template-columns: minmax(280px, 0.72fr) minmax(420px, 1fr);
+    gap: clamp(16px, 2.5vw, 32px);
 }
 
 .client-registration-focus .client-copy {
     justify-content: flex-end;
-    min-height: 580px;
+    min-height: min(500px, calc(100vh - 138px));
     color: #ffffff;
     background:
         linear-gradient(180deg, rgba(17,17,17,0.18), rgba(17,17,17,0.86)),
@@ -5194,10 +5202,13 @@ input[type="text"]#search:focus {
 }
 
 .client-registration-focus .client-copy p {
+    margin-top: 14px;
     color: rgba(255,255,255,0.78);
 }
 
 .client-registration-focus .client-preview-card-feature {
+    min-height: 72px;
+    margin-top: 18px;
     background: rgba(255,255,255,0.1);
     border-color: rgba(255,255,255,0.16);
     box-shadow: none;
@@ -5206,18 +5217,20 @@ input[type="text"]#search:focus {
 
 .client-registration-focus .client-panel {
     justify-content: flex-start;
-    padding: clamp(24px, 3vw, 36px);
+    padding: clamp(18px, 2.2vw, 28px);
 }
 
 .client-registration-focus .client-panel-header {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 18px;
+    gap: 14px;
+    margin-bottom: 10px;
 }
 
 .client-registration-focus .client-panel-header h3 {
-    font-size: clamp(28px, 3vw, 38px);
+    margin-bottom: 4px;
+    font-size: clamp(24px, 2.5vw, 32px);
 }
 
 .client-edit-toggle {
@@ -5255,9 +5268,9 @@ input[type="text"]#search:focus {
 
 .client-faq {
     display: grid;
-    gap: 10px;
-    margin-top: 22px;
-    padding-top: 18px;
+    gap: 7px;
+    margin-top: 14px;
+    padding-top: 12px;
     border-top: 1px solid rgba(197,160,89,0.18);
 }
 
@@ -5293,11 +5306,11 @@ input[type="text"]#search:focus {
     align-items: center;
     justify-content: space-between;
     gap: 14px;
-    min-height: 46px;
-    padding: 0 14px;
+    min-height: 36px;
+    padding: 0 12px;
     color: #2d251d;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 800;
     list-style: none;
 }
@@ -5310,8 +5323,8 @@ input[type="text"]#search:focus {
     content: "+";
     display: grid;
     place-items: center;
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
     flex: 0 0 auto;
     border-radius: 50%;
     background: #111111;
@@ -5326,15 +5339,15 @@ input[type="text"]#search:focus {
 
 .client-faq p {
     margin: 0;
-    padding: 0 14px 14px;
+    padding: 0 12px 10px;
     color: #62584d;
-    font-size: 13px;
-    line-height: 1.55;
+    font-size: 12px;
+    line-height: 1.45;
 }
 
 .client-registration-focus .client-access-card {
     grid-template-columns: minmax(0, 1fr) auto;
-    margin: 0 0 18px;
+    margin: 0 0 12px;
     background:
         linear-gradient(135deg, rgba(17,17,17,0.96), rgba(49,39,27,0.92));
     color: #ffffff;
@@ -5358,7 +5371,8 @@ input[type="text"]#search:focus {
 .client-registration-focus .client-access-title {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    margin-top: 2px;
+    margin-top: 0;
+    margin-bottom: 10px;
 }
 
 .client-load-link {
@@ -5383,15 +5397,17 @@ input[type="text"]#search:focus {
 }
 
 .client-registration-focus .client-form-grid {
-    gap: 13px;
+    gap: 10px;
 }
 
 .client-registration-focus .client-action-row {
     grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    margin-top: 12px;
 }
 
 .client-registration-focus .btn-client-primary {
-    min-height: 52px;
+    min-height: 46px;
     border-radius: 999px;
 }
 
@@ -5410,23 +5426,197 @@ input[type="text"]#search:focus {
     }
 }
 
+@media (min-width: 901px) and (max-height: 760px) {
+    #secao-cliente.page-static {
+        height: calc(100vh - 85px);
+        padding-top: 14px;
+        padding-bottom: 14px;
+        overflow: hidden;
+    }
+
+    .client-registration-focus {
+        height: calc(100vh - 113px);
+        align-items: stretch;
+    }
+
+    .client-registration-focus .client-copy {
+        min-height: 0;
+        max-height: 100%;
+        padding: 22px;
+        overflow: hidden;
+    }
+
+    .client-registration-focus .client-panel {
+        max-height: 100%;
+        padding: 18px 20px;
+        overflow-y: auto;
+        scrollbar-width: none;
+    }
+
+    .client-registration-focus .client-panel::-webkit-scrollbar {
+        display: none;
+    }
+
+    .client-registration-focus .client-brand-lockup {
+        margin-bottom: 18px;
+    }
+
+    .client-registration-focus .client-copy h2 {
+        font-size: 34px;
+    }
+
+    .client-registration-focus .client-panel-header p {
+        font-size: 12px;
+    }
+
+    .client-faq details:not(:first-of-type) p {
+        display: none;
+    }
+}
+
 @media (max-width: 768px) {
+    html,
+    body {
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+
+    nav {
+        overflow: visible;
+    }
+
     .client-registration-focus .client-panel-header {
         display: grid;
-        gap: 12px;
+        gap: 10px;
+        margin-bottom: 8px;
     }
 
     .client-edit-toggle {
         justify-self: start;
     }
 
+    #secao-cliente.page-static {
+        width: 100%;
+        padding-top: 18px;
+        padding-bottom: 24px;
+        overflow-x: hidden;
+    }
+
+    .client-registration-focus {
+        display: grid;
+        grid-template-columns: 1fr;
+        width: 100%;
+        max-width: 520px;
+        gap: 12px;
+        margin-inline: auto;
+    }
+
+    .client-registration-focus .client-copy,
+    .client-registration-focus .client-panel {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+    }
+
+    .client-registration-focus .client-copy {
+        display: grid;
+        align-content: start;
+        min-height: auto;
+        padding: 16px;
+        border-radius: 16px;
+    }
+
+    .client-registration-focus .client-brand-lockup {
+        grid-template-columns: 42px minmax(0, 1fr);
+        width: 100%;
+        margin-bottom: 12px;
+        padding: 8px;
+    }
+
+    .client-registration-focus .client-brand-lockup img {
+        width: 42px;
+        height: 42px;
+    }
+
+    .client-registration-focus .client-brand-lockup strong {
+        font-size: 13px;
+    }
+
+    .client-registration-focus .client-copy h2 {
+        max-width: 13ch;
+        margin-top: 8px;
+        font-size: 25px;
+        line-height: 1.08;
+    }
+
+    .client-registration-focus .client-copy p {
+        margin-top: 10px;
+        font-size: 13px;
+        line-height: 1.48;
+    }
+
+    .client-registration-focus .client-preview-card-feature {
+        grid-template-columns: 46px minmax(0, 1fr);
+        min-height: 56px;
+        margin-top: 12px;
+        padding: 12px;
+        gap: 10px;
+    }
+
+    .client-registration-focus .client-preview-card-feature .client-preview-avatar {
+        width: 46px;
+        height: 46px;
+        font-size: 15px;
+    }
+
+    .client-registration-focus .client-preview-card-feature strong {
+        display: -webkit-box;
+        overflow: hidden;
+        font-size: 14px;
+        line-height: 1.18;
+        text-overflow: clip;
+        white-space: normal;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+    }
+
+    .client-registration-focus .client-preview-card-feature span {
+        margin-top: 3px;
+        font-size: 11px;
+        line-height: 1.25;
+    }
+
+    .client-registration-focus .client-panel {
+        padding: 16px;
+        border-radius: 16px;
+    }
+
+    .client-registration-focus .client-panel-header h3 {
+        font-size: 24px;
+        line-height: 1.08;
+    }
+
+    .client-registration-focus .client-panel-header p {
+        font-size: 12px;
+        line-height: 1.45;
+    }
+
+    .client-registration-focus .client-auth-status {
+        margin-bottom: 10px;
+        padding: 10px 12px;
+    }
+
     .client-registration-focus .client-access-card,
     .client-registration-focus .client-action-row {
         grid-template-columns: 1fr;
+        gap: 8px;
     }
 
     .client-registration-focus .client-access-title {
         grid-template-columns: 1fr;
+        gap: 8px;
+        margin-bottom: 8px;
     }
 
     .client-load-link {
@@ -5437,6 +5627,137 @@ input[type="text"]#search:focus {
     .client-registration-focus .btn-secondary {
         width: 100%;
         min-width: 0;
+    }
+
+    .client-registration-focus .client-form-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .client-registration-focus input,
+    .client-registration-focus select,
+    .client-registration-focus textarea {
+        min-width: 0;
+    }
+
+    .client-faq {
+        gap: 6px;
+        margin-top: 12px;
+        padding-top: 10px;
+    }
+
+    .client-faq-heading {
+        display: grid;
+        gap: 2px;
+    }
+
+    .client-faq-heading strong {
+        font-size: 12px;
+    }
+
+    .client-faq details {
+        border-radius: 10px;
+    }
+
+    .client-faq summary {
+        min-height: 40px;
+        padding: 8px 10px;
+        font-size: 12px;
+        line-height: 1.25;
+    }
+
+    .client-faq p {
+        padding: 0 10px 10px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 520px) {
+    nav .nav-flex {
+        grid-template-columns: 42px minmax(70px, 1fr) auto;
+        gap: 6px;
+    }
+
+    nav .logo-container {
+        width: 82px;
+        max-width: 82px;
+    }
+
+    nav .nav-flex.search-active .logo-container {
+        left: 74px;
+        width: 58px;
+        max-width: 58px;
+        opacity: 0.55;
+    }
+
+    .nav-actions {
+        gap: 5px;
+    }
+
+    .nav-search.search-open {
+        right: 0;
+        width: min(248px, calc(100vw - 72px));
+    }
+}
+
+@media (max-width: 420px) {
+    #secao-cliente.container {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .client-registration-focus {
+        gap: 10px;
+    }
+
+    .client-registration-focus .client-copy,
+    .client-registration-focus .client-panel {
+        padding: 14px;
+        border-radius: 14px;
+    }
+
+    .client-registration-focus .client-copy h2 {
+        font-size: 23px;
+    }
+
+    .client-registration-focus .client-preview-card-feature {
+        grid-template-columns: 42px minmax(0, 1fr);
+        min-height: 62px;
+        padding: 10px;
+        border-radius: 12px;
+    }
+
+    .client-registration-focus .client-preview-card-feature .client-preview-avatar {
+        width: 42px;
+        height: 42px;
+        font-size: 13px;
+    }
+
+    .client-registration-focus .client-preview-card-feature strong {
+        font-size: 13px;
+    }
+
+    .client-registration-focus .client-preview-card-feature span {
+        font-size: 10px;
+    }
+
+    .client-registration-focus .client-panel-header h3 {
+        font-size: 22px;
+    }
+
+    .client-registration-focus .client-access-card {
+        padding: 12px;
+    }
+
+    .client-registration-focus .btn-client-primary,
+    .client-registration-focus .btn-secondary,
+    .client-load-link {
+        min-height: 42px;
+        font-size: 11px;
+    }
+
+    .client-faq summary {
+        font-size: 11px;
     }
 }
 

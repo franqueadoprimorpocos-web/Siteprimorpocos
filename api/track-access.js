@@ -36,7 +36,7 @@ function obterBody(req) {
 module.exports = async function handler(req, res) {
     if (req.method !== "POST") {
         res.setHeader("Allow", "POST");
-        return res.status(405).json({ ok: false });
+        return res.status(200).json({ ok: false, reason: "method_ignored" });
     }
 
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
