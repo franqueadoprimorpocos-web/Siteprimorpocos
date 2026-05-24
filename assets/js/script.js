@@ -14,6 +14,90 @@ if (!SUPABASE_CONFIG_OK) {
     console.error("Configuração do Supabase ausente. Gere assets/js/env.js pelo build ou configure as variáveis na Vercel.");
 }
 
+function registrarCacheTemporario() {
+    if (!("serviceWorker" in navigator)) return;
+    if (!["http:", "https:"].includes(window.location.protocol)) return;
+
+    window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/sw.js").catch(() => {
+            // O cache e apenas uma melhoria de velocidade; o catalogo continua sem ele.
+        });
+    });
+}
+
+let observadorMovimento = null;
+
+function configurarRevelacaoSuave() {
+    if (!("IntersectionObserver" in window)) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    observadorMovimento = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            entry.target.classList.add("is-visible");
+            observadorMovimento.unobserve(entry.target);
+        });
+    }, {
+        threshold: 0.12,
+        rootMargin: "0px 0px -8% 0px"
+    });
+}
+
+function aplicarRevelacaoSuave(raiz = document) {
+    if (!observadorMovimento) {
+        raiz.querySelectorAll?.(".motion-reveal").forEach(elemento => elemento.classList.add("is-visible"));
+        return;
+    }
+
+    const seletores = [
+        ".feature-card",
+        ".home-catalog-preview",
+        ".catalog-hero-intro",
+        ".catalog-brand-group",
+        ".history-hero-card",
+        ".history-pillars div",
+        ".contact-main-card",
+        ".contact-map",
+        ".client-registration-focus .client-copy",
+        ".client-registration-focus .client-panel"
+    ].join(",");
+
+    raiz.querySelectorAll?.(seletores).forEach((elemento, indice) => {
+        if (elemento.classList.contains("motion-reveal")) return;
+        elemento.classList.add("motion-reveal");
+        elemento.style.setProperty("--motion-delay", `${Math.min(indice * 35, 180)}ms`);
+        observadorMovimento.observe(elemento);
+    });
+}
+
+function configurarMicrointeracoes() {
+    const seletor = ".btn, .brand-chip, .client-edit-toggle, .client-load-link, .mobile-logout-action, .contact-whatsapp-btn, .preview-mini-grid button";
+
+    document.addEventListener("pointerdown", event => {
+        const alvo = event.target.closest(seletor);
+        if (!alvo || alvo.disabled) return;
+
+        alvo.classList.add("is-pressing");
+
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+        const rect = alvo.getBoundingClientRect();
+        const ripple = document.createElement("span");
+        ripple.className = "tap-ripple";
+        ripple.style.left = `${event.clientX - rect.left}px`;
+        ripple.style.top = `${event.clientY - rect.top}px`;
+        alvo.appendChild(ripple);
+        window.setTimeout(() => ripple.remove(), 560);
+    }, true);
+
+    ["pointerup", "pointercancel", "pointerleave"].forEach(evento => {
+        document.addEventListener(evento, event => {
+            const alvo = event.target.closest?.(seletor);
+            if (alvo) alvo.classList.remove("is-pressing");
+        }, true);
+    });
+}
+
 async function registrarAcessoCatalogo() {
     if (!document.getElementById("product-list")) return;
     if (sessionStorage.getItem("primor_acesso_registrado") === dataISOHoje()) return;
@@ -852,6 +936,7 @@ function abrirModalCliente() {
 
     if (modal) {
         modal.style.display = "flex";
+        window.requestAnimationFrame(() => modal.classList.add("active"));
         window.setTimeout(() => (emailModal?.value ? telefoneModal : emailModal)?.focus(), 80);
     }
 }
@@ -859,7 +944,12 @@ function abrirModalCliente() {
 function fecharModalCliente(event) {
     if (event && event.target?.id !== "modal-cliente") return;
     const modal = document.getElementById("modal-cliente");
-    if (modal) modal.style.display = "none";
+    if (modal) {
+        modal.classList.remove("active");
+        window.setTimeout(() => {
+            if (!modal.classList.contains("active")) modal.style.display = "none";
+        }, 180);
+    }
 }
 
 async function buscarClientePorAcesso() {
@@ -1075,13 +1165,17 @@ function abrirModalAtendimento(nomePerfume, marcaPerfume = "") {
     const modal = document.getElementById("modal-whatsapp");
     if (modal) {
         modal.style.display = "flex";
+        window.requestAnimationFrame(() => modal.classList.add("active"));
     }
 }
 
 function fecharModal() {
     const modal = document.getElementById("modal-whatsapp");
     if (modal) {
-        modal.style.display = "none";
+        modal.classList.remove("active");
+        window.setTimeout(() => {
+            if (!modal.classList.contains("active")) modal.style.display = "none";
+        }, 180);
     }
     preencherFormularioCliente("cliente");
 }
@@ -1209,6 +1303,7 @@ function renderizarProdutos(produtos) {
                 containerDestaques.innerHTML += criarCardHTML(produto);
             });
         padronizarImagensCatalogo(containerDestaques);
+        aplicarRevelacaoSuave(containerDestaques);
     } else if (secaoDestaques) {
         secaoDestaques.style.display = "none";
     }
@@ -1263,6 +1358,7 @@ function renderizarProdutos(produtos) {
         });
 
     padronizarImagensCatalogo(container);
+    aplicarRevelacaoSuave(container);
 }
 
 function criarCardHTML(produto) {
@@ -1274,7 +1370,7 @@ function criarCardHTML(produto) {
     const volumesDisplay = volumes.length ? `<p class="volumes-texto">Volumes: ${volumes.map(volume => `${volume}ml`).join(", ")}</p>` : "";
     const imagemSegura = escaparHTML(normalizarImagemProduto(produto.imagem));
     const imagemDisplay = imagemSegura
-        ? `<img src="${imagemSegura}" alt="${nomeSeguro}" loading="lazy" onload="padronizarImagemCatalogo(this)" onerror="tratarErroImagem(this)">`
+        ? `<img src="${imagemSegura}" alt="${nomeSeguro}" loading="lazy" decoding="async" onload="padronizarImagemCatalogo(this)" onerror="tratarErroImagem(this)">`
         : "";
     const esgotado = produtoEsgotado(produto);
     const sobDemanda = produtoSobDemanda(produto);
@@ -1392,6 +1488,7 @@ function configurarRolagemHorizontalSegura() {
 
 // Inicializador dos mais procurados
 configurarRolagemHorizontalSegura();
+registrarCacheTemporario();
 carregarProdutos();
 registrarAcessoCatalogo();
 
@@ -2880,6 +2977,10 @@ async function deletarMarca(id) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+    configurarRevelacaoSuave();
+    configurarMicrointeracoes();
+    aplicarRevelacaoSuave(document);
+
     preencherFormularioCliente("cliente-login");
     preencherFormularioCliente("cliente");
     atualizarBotaoLoginCliente();

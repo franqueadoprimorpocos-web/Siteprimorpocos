@@ -908,9 +908,11 @@ input[type="text"]::placeholder {
     overflow-x: auto;
     overflow-y: hidden;
     overscroll-behavior-inline: contain;
+    overflow-anchor: none;
     padding-top: 0;
     padding-bottom: 18px;
-    scroll-snap-type: inline proximity;
+    scroll-behavior: auto;
+    scroll-snap-type: none !important;
     scrollbar-width: thin;
     -webkit-overflow-scrolling: touch;
     touch-action: pan-x pan-y;
@@ -920,7 +922,7 @@ input[type="text"]::placeholder {
 
 .catalog-brand-grid.is-dragging {
     cursor: grabbing;
-    scroll-snap-type: none;
+    scroll-snap-type: none !important;
 }
 
 .catalog-brand-grid::-webkit-scrollbar {
@@ -939,7 +941,10 @@ input[type="text"]::placeholder {
 
 .catalog-brand-grid .product-card {
     flex: 0 0 clamp(246px, 24vw, 286px);
-    scroll-snap-align: start;
+    overflow-anchor: none;
+    scroll-snap-align: none !important;
+    scroll-snap-stop: normal !important;
+    animation: none;
 }
 
 .catalog-brand-group.is-expanded .catalog-brand-grid {
@@ -5965,5 +5970,180 @@ input[type="text"]#search:focus {
 
     .client-load-header h3 {
         font-size: 25px;
+    }
+}
+
+/* ==========================================================================
+   POLIMENTO FINAL DE MOVIMENTO E INTERACAO
+   ========================================================================== */
+.motion-reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition:
+        opacity 0.58s ease,
+        transform 0.58s cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: var(--motion-delay, 0ms);
+}
+
+.motion-reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.btn,
+.brand-chip,
+.feature-card,
+.product-card,
+.history-pillars div,
+.contact-list li,
+.contact-service-grid span,
+.preview-mini-grid button,
+.client-edit-toggle,
+.client-load-link,
+.mobile-logout-action,
+.contact-whatsapp-btn {
+    will-change: transform;
+}
+
+.btn,
+.brand-chip,
+.client-edit-toggle,
+.client-load-link,
+.mobile-logout-action,
+.contact-whatsapp-btn,
+.preview-mini-grid button {
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::before,
+.client-edit-toggle::before,
+.client-load-link::before,
+.mobile-logout-action::before,
+.contact-whatsapp-btn::before,
+.preview-mini-grid button::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(110deg, transparent 0%, rgba(255,255,255,0.24) 44%, transparent 72%);
+    opacity: 0;
+    transform: translateX(-120%);
+    transition: opacity 0.24s ease, transform 0.58s ease;
+    pointer-events: none;
+}
+
+.btn:hover::before,
+.client-edit-toggle:hover::before,
+.client-load-link:hover::before,
+.mobile-logout-action:hover::before,
+.contact-whatsapp-btn:hover::before,
+.preview-mini-grid button:hover::before {
+    opacity: 1;
+    transform: translateX(120%);
+}
+
+.btn.is-pressing,
+.brand-chip.is-pressing,
+.client-edit-toggle.is-pressing,
+.client-load-link.is-pressing,
+.mobile-logout-action.is-pressing,
+.contact-whatsapp-btn.is-pressing,
+.preview-mini-grid button.is-pressing {
+    transform: translateY(1px) scale(0.985);
+    filter: brightness(1.06);
+}
+
+.tap-ripple {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: rgba(216,179,95,0.34);
+    pointer-events: none;
+    transform: translate(-50%, -50%) scale(1);
+    animation: primorTapRipple 0.54s ease-out forwards;
+}
+
+.nav-links a,
+.nav-links-right a,
+.dropbtn,
+.dropdown-content a {
+    transition:
+        color 0.22s ease,
+        background 0.22s ease,
+        transform 0.22s ease,
+        border-color 0.22s ease;
+}
+
+.nav-links a:hover,
+.nav-links-right a:hover,
+.dropdown-content a:hover {
+    transform: translateY(-1px);
+}
+
+.modal-overlay {
+    transition: opacity 0.24s ease, backdrop-filter 0.24s ease;
+}
+
+.modal-overlay.active .modal-box {
+    animation: modalIn 0.28s ease both, softFloatIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.catalog-brand-header,
+.client-faq details,
+.map-details div,
+.contact-main-card,
+.contact-map {
+    transition:
+        transform 0.24s ease,
+        border-color 0.24s ease,
+        box-shadow 0.24s ease,
+        background 0.24s ease;
+}
+
+.client-faq details:hover,
+.map-details div:hover {
+    transform: translateY(-1px);
+    border-color: rgba(197,160,89,0.34);
+}
+
+@keyframes primorTapRipple {
+    from {
+        opacity: 0.62;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(18);
+    }
+}
+
+@keyframes softFloatIn {
+    from {
+        filter: blur(2px);
+        transform: translateY(14px) scale(0.985);
+    }
+    to {
+        filter: blur(0);
+        transform: translateY(0) scale(1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .motion-reveal,
+    .motion-reveal.is-visible {
+        opacity: 1;
+        transform: none;
+        transition: none;
+    }
+
+    .tap-ripple,
+    .btn::before,
+    .client-edit-toggle::before,
+    .client-load-link::before,
+    .mobile-logout-action::before,
+    .contact-whatsapp-btn::before,
+    .preview-mini-grid button::before {
+        display: none;
     }
 }
