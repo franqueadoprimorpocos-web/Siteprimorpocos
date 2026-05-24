@@ -39,7 +39,7 @@
                 <div>
                     <span class="admin-eyebrow">Gestao Primor</span>
                     <h1>Painel do catalogo</h1>
-                    <p>Cadastre perfumes, organize marcas, acompanhe novidades e mantenha a vitrine pronta para atendimento.</p>
+                    <p>Cadastre perfumes, organize marcas, acompanhe novidades e mantenha os mais procurados prontos para atendimento.</p>
                 </div>
                 <div class="admin-quick-links">
                     <a href="#admin-panel-perfumes" onclick="trocarCategoriaAdmin('perfumes')">Cadastrar perfume</a>
@@ -127,7 +127,7 @@
 
                         <label class="checkbox-container">
                             <input type="checkbox" id="destaque">
-                            <span>Marcar na Vitrine</span>
+                            <span>Marcar como mais procurado</span>
                         </label>
 
                         <label class="checkbox-container">
@@ -172,7 +172,7 @@
                         <div id="filtro-status-lateral" class="admin-side-status-filter">
                             <button type="button" class="active" data-status="" onclick="filtrarStatusLateralAdmin('')">Todos</button>
                             <button type="button" data-status="disponivel" onclick="filtrarStatusLateralAdmin('disponivel')">Disponiveis</button>
-                            <button type="button" data-status="vitrine" onclick="filtrarStatusLateralAdmin('vitrine')">Vitrine</button>
+                            <button type="button" data-status="vitrine" onclick="filtrarStatusLateralAdmin('vitrine')">Procurado</button>
                             <button type="button" data-status="novidade" onclick="filtrarStatusLateralAdmin('novidade')">Recem chegados</button>
                             <button type="button" data-status="esgotado" onclick="filtrarStatusLateralAdmin('esgotado')">Esgotados</button>
                             <button type="button" data-status="demanda" onclick="filtrarStatusLateralAdmin('demanda')">Sob demanda</button>
@@ -236,7 +236,7 @@
                     <select id="filtro-status-admin">
                         <option value="">Todos os status</option>
                         <option value="disponivel">Disponiveis agora</option>
-                        <option value="vitrine">Vitrine</option>
+                        <option value="vitrine">Procurado</option>
                         <option value="novidade">Recem chegados</option>
                         <option value="esgotado">Esgotados</option>
                         <option value="demanda">Sob demanda / encomenda</option>

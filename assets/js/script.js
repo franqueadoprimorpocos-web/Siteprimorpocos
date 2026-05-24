@@ -669,21 +669,26 @@ function atualizarPreviewCliente(cliente = clienteAtual) {
 
 function atualizarBotaoLoginCliente() {
     const botao = document.getElementById("login-nav-button");
+    const botaoSair = document.getElementById("logout-nav-button");
     if (!botao) return;
 
     const nome = primeiroNomeCliente();
     if (nome) {
-        botao.textContent = nome;
+        botao.textContent = iniciaisCliente(nome).slice(0, 2);
         botao.dataset.logado = "true";
         botao.dataset.iniciais = iniciaisCliente(nome).slice(0, 2);
-        botao.title = "Abrir cadastro do cliente";
+        botao.setAttribute("aria-label", `Abrir cadastro de ${nome}`);
+        botao.title = nome;
+        if (botaoSair) botaoSair.hidden = false;
         return;
     }
 
-    botao.textContent = "Cadastro";
+    botao.textContent = "CP";
     botao.dataset.logado = "false";
-    botao.dataset.iniciais = "";
+    botao.dataset.iniciais = "CP";
+    botao.setAttribute("aria-label", "Abrir cadastro");
     botao.title = "Abrir cadastro do cliente";
+    if (botaoSair) botaoSair.hidden = true;
 }
 
 function definirStatusCliente(cliente = clienteAtual) {
@@ -780,9 +785,38 @@ async function sincronizarClienteAutenticado() {
     }
 }
 
+function abrirModalCliente() {
+    const modal = document.getElementById("modal-cliente");
+    const emailModal = document.getElementById("cliente-acesso-email");
+    const telefoneModal = document.getElementById("cliente-acesso-telefone");
+
+    if (emailModal) emailModal.value = document.getElementById("cliente-login-email-form")?.value || clienteAtual.email || "";
+    if (telefoneModal) telefoneModal.value = document.getElementById("cliente-login-telefone")?.value || clienteAtual.telefone || "";
+
+    if (modal) {
+        modal.style.display = "flex";
+        window.setTimeout(() => (emailModal?.value ? telefoneModal : emailModal)?.focus(), 80);
+    }
+}
+
+function fecharModalCliente(event) {
+    if (event && event.target?.id !== "modal-cliente") return;
+    const modal = document.getElementById("modal-cliente");
+    if (modal) modal.style.display = "none";
+}
+
 async function buscarClientePorAcesso() {
-    const emailAcesso = normalizarEmail(document.getElementById("cliente-login-email")?.value || document.getElementById("cliente-login-email-form")?.value || "");
-    const telefoneAcesso = normalizarTelefone(document.getElementById("cliente-login-telefone")?.value || "");
+    const emailAcesso = normalizarEmail(
+        document.getElementById("cliente-acesso-email")?.value
+        || document.getElementById("cliente-login-email")?.value
+        || document.getElementById("cliente-login-email-form")?.value
+        || ""
+    );
+    const telefoneAcesso = normalizarTelefone(
+        document.getElementById("cliente-acesso-telefone")?.value
+        || document.getElementById("cliente-login-telefone")?.value
+        || ""
+    );
     if (!emailAcesso && !telefoneAcesso) {
         definirFeedbackCliente("Informe e-mail ou telefone para acessar seu cadastro.", "erro");
         return null;
@@ -822,6 +856,7 @@ async function acessarCadastroCliente() {
         preencherFormularioCliente("cliente", clienteAtual);
         definirStatusCliente(clienteAtual);
         definirFeedbackCliente("Cadastro carregado neste dispositivo.", "sucesso");
+        fecharModalCliente();
     } catch (error) {
         console.warn("Não foi possível acessar cadastro:", error);
         definirFeedbackCliente("Não foi possível buscar o cadastro agora.", "erro");
@@ -901,6 +936,7 @@ function mostrarSecao(secaoId) {
     }
 
     fecharMenuMobile();
+    if (document.activeElement !== document.getElementById("search")) fecharBuscaNav();
 }
 
 function abrirMenuMobile() {
@@ -1161,7 +1197,7 @@ function criarCardHTML(produto) {
         : "";
     const textoBotao = esgotado ? "Consultar reposição" : sobDemanda ? "Consultar encomenda" : "Consultar disponibilidade";
     const selos = [
-        produtoEhDestaque(produto) ? `<span class="card-ribbon card-ribbon-destaque">Vitrine</span>` : "",
+        produtoEhDestaque(produto) ? `<span class="card-ribbon card-ribbon-destaque">Mais procurado</span>` : "",
         produtoEhNovidade(produto) ? `<span class="card-ribbon card-ribbon-novo">Recém-chegado</span>` : "",
         esgotado ? `<span class="card-ribbon card-ribbon-esgotado">Esgotado</span>` : "",
         !esgotado && sobDemanda ? `<span class="card-ribbon card-ribbon-demanda">Sob demanda</span>` : ""
@@ -1267,15 +1303,58 @@ function configurarRolagemHorizontalSegura() {
     }, true);
 }
 
-// Inicializador da Vitrine
+// Inicializador dos mais procurados
 configurarRolagemHorizontalSegura();
 carregarProdutos();
 registrarAcessoCatalogo();
 
 // Busca ativa dinâmica
 const searchInput = document.getElementById("search");
+const navSearch = document.getElementById("nav-search");
+const searchToggle = document.getElementById("search-toggle");
+let timerFecharBusca = null;
+
+function abrirBuscaNav(focar = true) {
+    if (!navSearch || !searchInput || !searchToggle) return;
+    window.clearTimeout(timerFecharBusca);
+    navSearch.classList.add("search-open");
+    searchToggle.setAttribute("aria-expanded", "true");
+    searchToggle.setAttribute("aria-label", "Fechar busca");
+    if (focar) searchInput.focus();
+}
+
+function fecharBuscaNav() {
+    if (!navSearch || !searchInput || !searchToggle) return;
+    window.clearTimeout(timerFecharBusca);
+    navSearch.classList.remove("search-open");
+    searchToggle.setAttribute("aria-expanded", "false");
+    searchToggle.setAttribute("aria-label", "Abrir busca");
+    searchInput.blur();
+}
+
+function agendarFechamentoBusca() {
+    if (!navSearch?.classList.contains("search-open")) return;
+    window.clearTimeout(timerFecharBusca);
+    timerFecharBusca = window.setTimeout(() => {
+        if (document.activeElement !== searchInput) fecharBuscaNav();
+    }, 5000);
+}
+
+if (searchToggle) {
+    searchToggle.addEventListener("click", event => {
+        event.stopPropagation();
+        if (navSearch?.classList.contains("search-open")) {
+            fecharBuscaNav();
+        } else {
+            abrirBuscaNav();
+        }
+    });
+}
+
 if (searchInput) {
+    searchInput.addEventListener("focus", () => abrirBuscaNav(false));
     searchInput.addEventListener("input", function() {
+        abrirBuscaNav(false);
         const termo = this.value.toLowerCase().trim();
         marcaSelecionadaCatalogo = "";
         filtroEspecialCatalogo = "";
@@ -1290,6 +1369,17 @@ if (searchInput) {
         renderizarProdutos(filtrados);
     });
 }
+
+document.addEventListener("click", event => {
+    if (!navSearch?.classList.contains("search-open")) return;
+    if (event.target.closest("#nav-search")) return;
+    agendarFechamentoBusca();
+});
+
+document.addEventListener("keydown", event => {
+    if (event.key === "Escape") fecharBuscaNav();
+    if (event.key === "Escape") fecharModalCliente();
+});
 
 // ==========================================
 // PAINEL ADMINISTRADOR (LOGIN E CRUD AGRUPADO)
@@ -1811,7 +1901,7 @@ function renderizarResumoAdmin(produtos, grupos) {
         <div><strong>${grupos.size}</strong><span>Perfumes agrupados</span></div>
         <div><strong>${produtos.length}</strong><span>Variações cadastradas</span></div>
         <div><strong>${marcas.size}</strong><span>Marcas</span></div>
-        <div><strong>${vitrine}</strong><span>Na vitrine</span></div>
+        <div><strong>${vitrine}</strong><span>Mais procurados</span></div>
         <div><strong>${novidades}</strong><span>Recém chegados</span></div>
         <div><strong>${atencoes}</strong><span>Atenções</span></div>
     `;
@@ -1878,7 +1968,7 @@ function renderizarCatalogoLateralAdmin() {
                 const imagem = normalizarImagemProduto(grupo.imagem);
                 const volumes = grupo.volumes.length ? grupo.volumes.map(v => `${v}ml`).join(", ") : "Sem volume";
                 const status = [
-                    grupo.destaque ? "Vitrine" : "",
+                    grupo.destaque ? "Mais procurado" : "",
                     grupo.novidade ? "Novo" : "",
                     grupo.esgotado ? "Esgotado" : "",
                     grupo.sob_demanda ? "Encomenda" : "",
@@ -1974,7 +2064,7 @@ function renderizarProdutosAdmin(produtos) {
                 const volumes = grupo.volumes.length ? grupo.volumes.map(v => `${v}ml`).join(", ") : "Sem volume";
                 const imagem = normalizarImagemProduto(grupo.imagem);
                 const selosAdmin = [
-                    grupo.destaque ? `<span>Vitrine</span>` : "",
+                    grupo.destaque ? `<span>Procurado</span>` : "",
                     grupo.novidade ? `<span>Recém-chegado${grupo.novidade_ate ? ` até ${escaparHTML(grupo.novidade_ate)}` : ""}</span>` : "",
                     grupo.esgotado ? `<span>Esgotado</span>` : "",
                     grupo.sob_demanda ? `<span>Sob demanda</span>` : "",
@@ -2232,7 +2322,7 @@ async function exportarBanco(formato) {
                 { campo: "marca", titulo: "Marca" },
                 { campo: "notas", titulo: "Notas olfativas", classe: "long-text" },
                 { campo: "imagem", titulo: "Imagem", tipo: "texto", classe: "link" },
-                { campo: "destaque", titulo: "Na vitrine", tipo: "booleano", classe: "status" },
+                { campo: "destaque", titulo: "Mais procurado", tipo: "booleano", classe: "status" },
                 { campo: "novidade", titulo: "Recém-chegado", tipo: "booleano", classe: "status" },
                 { campo: "novidade_ate", titulo: "Recém-chegado até", tipo: "data", classe: "date" },
                 { campo: "esgotado", titulo: "Esgotado", tipo: "booleano", classe: "status" },
@@ -2401,7 +2491,7 @@ async function exportarRelatorioGerencial() {
                     { campo: "observacao", titulo: "Observação" }
                 ],
                 linhas: [
-                    { status: "Na vitrine", quantidade: totalVitrine, observacao: "Produtos destacados na home e catálogo." },
+                    { status: "Mais procurados", quantidade: totalVitrine, observacao: "Produtos destacados na home e catálogo." },
                     { status: "Recém-chegados", quantidade: totalNovidades, observacao: "Produtos marcados como novidade dentro do prazo." },
                     { status: "Esgotados", quantidade: totalEsgotados, observacao: "Produtos sem disponibilidade imediata." },
                     { status: "Sob demanda / encomenda", quantidade: totalEncomenda, observacao: "Produtos que dependem de prazo ou pedido." },

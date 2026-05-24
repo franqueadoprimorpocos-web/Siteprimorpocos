@@ -43,10 +43,16 @@
                 </div>
                 <a href="#" onclick="mostrarSecao('historia')">Nossa História</a>
                 <a href="#" onclick="mostrarSecao('contato')">Contato</a>
-                <button class="login-nav-button" id="login-nav-button" type="button" onclick="mostrarSecao('cliente')">Cadastro</button>
             </div>
 
-            <input type="text" id="search" placeholder="Buscar por perfume ou nota...">
+            <div class="nav-actions">
+                <button class="login-nav-button" id="login-nav-button" type="button" onclick="mostrarSecao('cliente')" aria-label="Abrir cadastro">CP</button>
+                <button class="logout-nav-button" id="logout-nav-button" type="button" onclick="sairCliente()" aria-label="Sair do cadastro" hidden></button>
+                <div class="nav-search" id="nav-search">
+                    <button class="search-toggle" id="search-toggle" type="button" aria-label="Abrir busca" aria-expanded="false"></button>
+                    <input type="text" id="search" placeholder="Buscar perfume ou nota...">
+                </div>
+            </div>
         </div>
     </nav>
 
@@ -90,7 +96,7 @@
         <section class="container home-highlights" id="secao-destaques" style="display: none; padding-bottom: 20px;">
             <div class="section-title-wrapper">
                 <span class="subtitle">Seleção Exclusiva</span>
-                <h2>Nossa vitrine</h2>
+                <h2>Os mais procurados</h2>
                 <div class="accent-line"></div>
             </div>
             <div class="product-grid" id="highlights-list"></div>
@@ -247,7 +253,7 @@
     </section>
 
     <section id="secao-cliente" class="content-section container page-static">
-        <div class="client-login-page client-registration-upgrade">
+        <div class="client-login-page client-registration-upgrade client-registration-focus">
             <div class="client-copy">
                 <div class="client-brand-lockup">
                     <img src="https://lh3.googleusercontent.com/pw/AP1GczPfQM2bnksOdkucHZRJZo-kSqLrjW7zBi5pZECv-MmYOZSbH7myhH6qfBXTgYL_wODGz4Z-rF8r72sMgAQtJM7ZPJcc-t831YtTqqQsT-XtmxTE0q-8WmN3cg-AhSnrx5a2hC-_-H9mvfKwePlvxXQ=w98-h98-s-no-gm?authuser=0"
@@ -259,9 +265,9 @@
                 </div>
 
                 <span class="subtitle">Cadastro Primor</span>
-                <h2>Um atendimento que lembra de você</h2>
+                <h2>Seu atendimento em um toque</h2>
                 <div class="accent-line"></div>
-                <p>Guarde seus dados uma vez e facilite consultas, encomendas e próximos atendimentos no catálogo.</p>
+                <p>Salve e atualize seus dados para consultar perfumes, encomendas e retornos com menos repetição.</p>
 
                 <div class="client-preview-card client-preview-card-feature" aria-hidden="true">
                     <div class="client-preview-avatar" id="cliente-preview-avatar">P</div>
@@ -270,27 +276,21 @@
                         <span id="cliente-preview-detalhe">Cadastro aguardando seus dados</span>
                     </div>
                 </div>
-
-                <div class="client-mini-menu" aria-label="Vantagens do cadastro Primor">
-                    <span><strong>01</strong> Recupera em outro dispositivo</span>
-                    <span><strong>02</strong> Consulta mais objetiva</span>
-                    <span><strong>03</strong> Dados atualizados quando quiser</span>
-                </div>
             </div>
 
             <div class="client-panel">
                 <div class="client-panel-header">
                     <span>Área do cliente</span>
-                    <h3>Cadastro e acesso</h3>
-                    <p>Use e-mail e telefone como chave para encontrar seu perfil com segurança.</p>
+                    <h3>Entrar ou cadastrar</h3>
+                    <p>E-mail e telefone localizam seu perfil em qualquer dispositivo.</p>
                 </div>
 
                 <div class="client-auth-status" id="cliente-auth-status">Carregando cadastro...</div>
 
                 <form class="client-form" id="cliente-login-form" onsubmit="salvarClientePainel(event)">
                     <div class="client-access-title">
-                        <span>Dados de acesso</span>
-                        <small>Obrigatórios para recuperar seu cadastro depois</small>
+                        <span>Dados principais</span>
+                        <button class="client-load-link" type="button" onclick="abrirModalCliente()">Já tenho cadastro</button>
                     </div>
 
                     <div class="client-form-grid">
@@ -326,20 +326,29 @@
                     </div>
                 </form>
 
-                <div class="auth-divider"><span>Já tenho cadastro</span></div>
-
-                <div class="auth-actions">
-                    <div>
-                        <strong>Continuar de onde parou</strong>
-                        <p>Digite e-mail ou telefone acima e carregue seus dados salvos.</p>
-                    </div>
-                    <button class="btn" id="cliente-acessar-btn" type="button" onclick="acessarCadastroCliente()">Carregar meu perfil</button>
-                </div>
-
                 <p class="client-feedback" id="cliente-feedback"></p>
             </div>
         </div>
     </section>
+
+    <div id="modal-cliente" class="modal-overlay client-load-modal" onclick="fecharModalCliente(event)">
+        <div class="modal-box client-load-box">
+            <button class="modal-close" type="button" onclick="fecharModalCliente()">&times;</button>
+            <div class="client-load-header">
+                <span class="modal-kicker">Acesso Primor</span>
+                <h3>Carregar cadastro</h3>
+                <p>Use o e-mail ou telefone informado no seu cadastro para continuar em outro dispositivo.</p>
+            </div>
+            <div class="client-load-fields">
+                <label for="cliente-acesso-email">E-mail</label>
+                <input type="email" id="cliente-acesso-email" autocomplete="email" placeholder="seuemail@exemplo.com">
+                <label for="cliente-acesso-telefone">Telefone</label>
+                <input type="tel" id="cliente-acesso-telefone" autocomplete="tel" placeholder="(35) 99999-9999">
+            </div>
+            <button class="btn btn-client-primary" id="cliente-acessar-btn" type="button" onclick="acessarCadastroCliente()">Carregar meus dados</button>
+            <p class="client-load-note">Depois de carregar, você pode revisar e atualizar suas informações.</p>
+        </div>
+    </div>
 
     <div id="modal-whatsapp" class="modal-overlay">
         <div class="modal-box">
