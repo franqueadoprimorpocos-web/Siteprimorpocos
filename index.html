@@ -41,16 +41,31 @@
                         <span style="padding: 12px 16px; color: #888; font-size: 13px;">Carregando...</span>
                     </div>
                 </div>
-                <a href="#" onclick="mostrarSecao('historia')">Nossa História</a>
-                <a href="#" onclick="mostrarSecao('contato')">Contato</a>
+                <a class="mobile-only-link" href="#" onclick="mostrarSecao('historia')">Nossa História</a>
+                <a class="mobile-only-link" href="#" onclick="mostrarSecao('contato')">Contato</a>
             </div>
 
-            <div class="nav-actions">
-                <button class="login-nav-button" id="login-nav-button" type="button" onclick="mostrarSecao('cliente')" aria-label="Abrir cadastro">CP</button>
-                <button class="logout-nav-button" id="logout-nav-button" type="button" onclick="sairCliente()" aria-label="Sair do cadastro" hidden></button>
-                <div class="nav-search" id="nav-search">
-                    <button class="search-toggle" id="search-toggle" type="button" aria-label="Abrir busca" aria-expanded="false"></button>
-                    <input type="text" id="search" placeholder="Buscar perfume ou nota...">
+            <div class="nav-right-group">
+                <div class="nav-links-right" aria-label="Links secundários">
+                    <a href="#" onclick="mostrarSecao('historia')">Nossa História</a>
+                    <a href="#" onclick="mostrarSecao('contato')">Contato</a>
+                </div>
+                <div class="nav-actions">
+                    <div class="nav-accent" aria-hidden="true">
+                        <span>Poços</span>
+                        <i></i>
+                    </div>
+                    <div class="account-menu">
+                        <button class="login-nav-button" id="login-nav-button" type="button" onclick="abrirPainelCliente()" aria-label="Abrir cadastro">CP</button>
+                        <div class="account-dropdown" aria-label="Menu da conta">
+                            <button type="button" onclick="abrirPainelCliente()">Configuração da conta</button>
+                            <button type="button" id="logout-nav-button" onclick="sairCliente()" hidden>Sair</button>
+                        </div>
+                    </div>
+                    <div class="nav-search" id="nav-search">
+                        <button class="search-toggle" id="search-toggle" type="button" aria-label="Abrir busca" aria-expanded="false"></button>
+                        <input type="text" id="search" placeholder="Buscar perfume ou nota...">
+                    </div>
                 </div>
             </div>
         </div>
@@ -280,9 +295,12 @@
 
             <div class="client-panel">
                 <div class="client-panel-header">
-                    <span>Área do cliente</span>
-                    <h3>Entrar ou cadastrar</h3>
-                    <p>E-mail e telefone localizam seu perfil em qualquer dispositivo.</p>
+                    <div>
+                        <span>Área do cliente</span>
+                        <h3>Entrar ou cadastrar</h3>
+                        <p>E-mail e telefone localizam seu perfil em qualquer dispositivo.</p>
+                    </div>
+                    <button class="client-edit-toggle" id="cliente-editar-btn" type="button" onclick="alternarEdicaoCliente(true)" hidden>Editar dados</button>
                 </div>
 
                 <div class="client-auth-status" id="cliente-auth-status">Carregando cadastro...</div>
@@ -327,6 +345,29 @@
                 </form>
 
                 <p class="client-feedback" id="cliente-feedback"></p>
+
+                <div class="client-faq" aria-label="Perguntas frequentes sobre cadastro">
+                    <div class="client-faq-heading">
+                        <span>Dúvidas rápidas</span>
+                        <strong>FAQ do cliente</strong>
+                    </div>
+                    <details>
+                        <summary>Preciso me cadastrar para consultar um perfume?</summary>
+                        <p>Não. Você pode consultar direto pelo WhatsApp. O cadastro só facilita os próximos atendimentos.</p>
+                    </details>
+                    <details>
+                        <summary>Como recupero meus dados em outro dispositivo?</summary>
+                        <p>Use a opção “Já tenho cadastro” e informe o e-mail ou telefone que você salvou anteriormente.</p>
+                    </details>
+                    <details>
+                        <summary>Posso corrigir meu cadastro depois?</summary>
+                        <p>Sim. Quando estiver logado, toque em “Editar dados”, ajuste as informações e salve novamente.</p>
+                    </details>
+                    <details>
+                        <summary>Meus dados aparecem no WhatsApp?</summary>
+                        <p>A mensagem para a equipe fica objetiva. Seus dados servem para atendimento interno e continuidade do cadastro.</p>
+                    </details>
+                </div>
             </div>
         </div>
     </section>

@@ -691,27 +691,65 @@ function atualizarBotaoLoginCliente() {
     if (botaoSair) botaoSair.hidden = true;
 }
 
+function fecharMenuContaTemporariamente() {
+    const menu = document.querySelector(".account-menu");
+    if (!menu) return;
+    menu.classList.add("account-menu-closed");
+    document.activeElement?.blur?.();
+}
+
+function abrirPainelCliente() {
+    fecharMenuContaTemporariamente();
+    mostrarSecao("cliente");
+}
+
+function alternarEdicaoCliente(editar) {
+    const secao = document.getElementById("secao-cliente");
+    const botaoEditar = document.getElementById("cliente-editar-btn");
+    if (!secao) return;
+
+    secao.dataset.editando = editar ? "true" : "false";
+    if (botaoEditar) botaoEditar.hidden = editar || !clienteTemCadastroCompleto();
+}
+
 function definirStatusCliente(cliente = clienteAtual) {
     const status = document.getElementById("cliente-auth-status");
+    const secaoCliente = document.getElementById("secao-cliente");
+    const botaoEditar = document.getElementById("cliente-editar-btn");
     atualizarBotaoLoginCliente();
     atualizarPreviewCliente(cliente);
     if (!status) return;
 
     if (cadastroClienteCompleto(cliente)) {
         const identificador = cliente.nome || cliente.email || cliente.telefone;
-        status.innerHTML = `Cadastro Primor ativo neste dispositivo: <strong>${escaparHTML(identificador)}</strong>`;
+        status.innerHTML = `Logado como <strong>${escaparHTML(identificador)}</strong>`;
         status.dataset.estado = "ok";
+        if (secaoCliente) {
+            secaoCliente.dataset.clienteLogado = "true";
+            if (secaoCliente.dataset.editando !== "true") secaoCliente.dataset.editando = "false";
+        }
+        if (botaoEditar) botaoEditar.hidden = secaoCliente?.dataset.editando === "true";
         return;
     }
 
     if (cliente.email || cliente.nome || cliente.telefone) {
         status.innerHTML = "Cadastro iniciado. Complete nome e telefone para liberar benefícios e agilizar encomendas.";
         status.dataset.estado = "pendente";
+        if (secaoCliente) {
+            secaoCliente.dataset.clienteLogado = "false";
+            secaoCliente.dataset.editando = "true";
+        }
+        if (botaoEditar) botaoEditar.hidden = true;
         return;
     }
 
     status.textContent = "Preencha seu cadastro para facilitar descontos, encomendas e atendimento.";
     status.dataset.estado = "vazio";
+    if (secaoCliente) {
+        secaoCliente.dataset.clienteLogado = "false";
+        secaoCliente.dataset.editando = "true";
+    }
+    if (botaoEditar) botaoEditar.hidden = true;
 }
 
 async function registrarCliente(cliente, origem, authUserId = null) {
@@ -855,6 +893,7 @@ async function acessarCadastroCliente() {
         preencherFormularioCliente("cliente-login", clienteAtual);
         preencherFormularioCliente("cliente", clienteAtual);
         definirStatusCliente(clienteAtual);
+        alternarEdicaoCliente(false);
         definirFeedbackCliente("Cadastro carregado neste dispositivo.", "sucesso");
         fecharModalCliente();
     } catch (error) {
@@ -910,6 +949,7 @@ async function sairCliente() {
     preencherFormularioCliente("cliente-login", clienteAtual);
     preencherFormularioCliente("cliente", clienteAtual);
     definirStatusCliente(clienteAtual);
+    alternarEdicaoCliente(true);
     atualizarBotaoLoginCliente();
     definirFeedbackCliente("Você saiu do cadastro neste dispositivo.", "info");
 }
@@ -1062,6 +1102,7 @@ async function salvarClientePainel(event) {
     const gravado = await registrarCliente(clienteAtual, "area_cliente", clienteAtual.auth_user_id);
     preencherFormularioCliente("cliente", clienteAtual);
     definirStatusCliente(clienteAtual);
+    alternarEdicaoCliente(false);
     alternarCarregamentoCliente(false, ["cliente-salvar-btn", "cliente-acessar-btn"]);
 
     definirFeedbackCliente(
@@ -1312,12 +1353,25 @@ registrarAcessoCatalogo();
 const searchInput = document.getElementById("search");
 const navSearch = document.getElementById("nav-search");
 const searchToggle = document.getElementById("search-toggle");
+const navActions = document.querySelector(".nav-actions");
+const navRightGroup = document.querySelector(".nav-right-group");
+const navFlex = document.querySelector(".nav-flex");
+const accountMenu = document.querySelector(".account-menu");
 let timerFecharBusca = null;
+
+if (accountMenu) {
+    accountMenu.addEventListener("mouseleave", () => {
+        accountMenu.classList.remove("account-menu-closed");
+    });
+}
 
 function abrirBuscaNav(focar = true) {
     if (!navSearch || !searchInput || !searchToggle) return;
     window.clearTimeout(timerFecharBusca);
     navSearch.classList.add("search-open");
+    navActions?.classList.add("search-active");
+    navRightGroup?.classList.add("search-active");
+    navFlex?.classList.add("search-active");
     searchToggle.setAttribute("aria-expanded", "true");
     searchToggle.setAttribute("aria-label", "Fechar busca");
     if (focar) searchInput.focus();
@@ -1327,6 +1381,9 @@ function fecharBuscaNav() {
     if (!navSearch || !searchInput || !searchToggle) return;
     window.clearTimeout(timerFecharBusca);
     navSearch.classList.remove("search-open");
+    navActions?.classList.remove("search-active");
+    navRightGroup?.classList.remove("search-active");
+    navFlex?.classList.remove("search-active");
     searchToggle.setAttribute("aria-expanded", "false");
     searchToggle.setAttribute("aria-label", "Abrir busca");
     searchInput.blur();
